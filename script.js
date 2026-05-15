@@ -80,3 +80,10 @@ btnPlay.addEventListener("click", function() {
   console.log("Program to run:", commands);
   alert("Program ready! Check the console. WebSocket comes in Step 3.");
 });
+
+
+
+
+
+ git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
