@@ -1,0 +1,176 @@
+/* ── Reset & base ── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f4ff;
+  color: #222;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #3b3fce;
+  color: white;
+  padding: 14px 24px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #aaa;   /* grey = not connected */
+}
+
+.dot.connected {
+  background: #4caf50; /* green = connected */
+}
+
+/* ── Workspace ── */
+.workspace {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+/* ── Blocks panel (left) ── */
+.blocks-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.blocks-panel h2 {
+  font-size: 14px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+/* Block buttons */
+.block {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.1s;
+}
+
+.block:active {
+  transform: scale(0.96);
+}
+
+.block.move  { background: #d0ebff; color: #1864ab; }
+.block.turn  { background: #d3f9d8; color: #2b8a3e; }
+.block.sound { background: #fff3bf; color: #e67700; }
+.block.wait  { background: #ffe8cc; color: #d9480f; }
+
+/* ── Stage panel (right) ── */
+.stage-panel {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow-y: auto;
+}
+
+.stage-panel h2 {
+  font-size: 14px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.program-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-msg {
+  color: #bbb;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+/* Each command card in the program list */
+.program-item {
+  background: #f8f9ff;
+  border: 2px solid #e0e4ff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #3b3fce;
+}
+
+/* ── Footer ── */
+footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-play {
+  background: #3b3fce;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 48px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-play:hover { background: #2d31a6; }
+
+.btn-clear {
+  background: #f1f3f5;
+  color: #666;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-clear:hover { background: #e9ecef; }

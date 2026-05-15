@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Coder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header>
+    <span>🤖 Robot Coder</span>
+    <div class="status">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Not connected</span>
+    </div>
+  </header>
+
+  <!-- Main workspace -->
+  <div class="workspace">
+
+    <!-- Left: block buttons -->
+    <div class="blocks-panel">
+      <h2>Blocks</h2>
+
+      <button class="block move">▶ Move Forward</button>
+      <button class="block move">◀ Move Back</button>
+      <button class="block turn">↰ Turn Left</button>
+      <button class="block turn">↱ Turn Right</button>
+      <button class="block sound">🔔 Beep</button>
+      <button class="block wait">⏱ Wait</button>
+    </div>
+
+    <!-- Right: program area -->
+    <div class="stage-panel">
+      <h2>My Program</h2>
+      <div class="program-list" id="program-list">
+        <p class="empty-msg">Click a block to add it here</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom bar -->
+  <footer>
+    <button class="btn-clear" id="btn-clear">🗑 Clear</button>
+    <button class="btn-play" id="btn-play">▶ Play</button>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
