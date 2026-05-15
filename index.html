@@ -1,69 +1,81 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robot Coder 🤖</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <!-- Header -->
-  <header>
-    <div class="logo">🤖 Robot Coder</div>
-    <div class="status" id="status-bar">
-      <span class="dot" id="status-dot"></span>
-      <span id="status-text">Not connected</span>
-    </div>
-  </header>
-
-  <!-- Main workspace -->
-  <div class="workspace">
-    <!-- Blockly takes the left side -->
-    <div id="blockly-div"></div>
-
-    <!-- Right panel: run log -->
-    <div class="stage-panel">
-      <div class="stage-header">
-        <h2>📋 My Program</h2>
-        <span class="step-count" id="step-count">0 steps</span>
-      </div>
-      <div class="program-list" id="program-list">
-        <div class="empty-state">
-          <div class="empty-icon">👈</div>
-          <p>Drag blocks here to build your program!</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Robot Coder 🤖</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="logo">🤖 Robot Coder</div>
+      <div class="header-controls">
+        <select id="board-select">
+          <option>ESP32 Robot Kit</option>
+        </select>
+        <div class="status">
+          <span class="dot" id="status-dot"></span>
+          <span id="status-text">Not connected</span>
         </div>
       </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <select id="view-select">
+        <option value="blocks">Blocks</option>
+        <option value="both" selected>Blocks + Code</option>
+      </select>
+      <button class="toolbar-btn" id="btn-clear-workspace">🗑️ Clear All</button>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <footer>
-    <button class="btn-clear" id="btn-clear">🗑️ Clear</button>
-    <button class="btn-play" id="btn-play">
-      <span class="play-icon">▶</span>
-      <span class="play-text">Play!</span>
-    </button>
-  </footer>
+    <!-- Main area -->
+    <div class="main">
+      <!-- LEFT: Blockly workspace -->
+      <div class="blockly-wrap" id="blockly-wrap">
+        <div id="blockly-div"></div>
+      </div>
 
-  <!-- Success overlay (shows when program finishes) -->
-  <div class="overlay" id="overlay" style="display:none">
-    <div class="overlay-card">
-      <div class="overlay-emoji">🎉</div>
-      <h2>Program Done!</h2>
-      <p>Your robot finished all the steps!</p>
-      <button onclick="closeOverlay()">▶ Run Again</button>
+      <!-- DIVIDER (draggable) -->
+      <div class="divider" id="divider"></div>
+
+      <!-- RIGHT: Code preview -->
+      <div class="code-panel" id="code-panel">
+        <div class="code-header">
+          <span>📄 Generated Commands</span>
+          <button class="copy-btn" id="btn-copy">Copy</button>
+        </div>
+        <pre class="code-view" id="code-view">
+// Drag blocks to see commands here</pre
+        >
+      </div>
     </div>
-  </div>
 
-  <!-- Blockly scripts -->
-  <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
-  <script src="https://unpkg.com/blockly/msg/en.js"></script>
-  <script src="blocks.js"></script>
-  <script src="script.js"></script>
+    <!-- Footer -->
+    <footer>
+      <button class="btn-clear" id="btn-clear">🗑️ Clear Log</button>
+      <button class="btn-play" id="btn-play"><span>▶</span> Play!</button>
+    </footer>
 
-</body>
+    <!-- Success overlay -->
+    <div class="overlay" id="overlay" style="display: none">
+      <div class="overlay-card">
+        <div class="overlay-emoji">🎉</div>
+        <h2>Program Done!</h2>
+        <p>Your robot finished all the steps!</p>
+        <button onclick="closeOverlay()">▶ Run Again</button>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/msg/en.js"></script>
+    <script src="blocks.js"></script>
+    <script src="script.js"></script>
+  </body>
 </html>
-

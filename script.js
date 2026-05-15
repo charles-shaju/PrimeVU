@@ -1,24 +1,96 @@
+// ── Draggable divider between Blockly and code panel ──────
+const divider = document.getElementById("divider");
+const blocklyWrap = document.getElementById("blockly-wrap");
+const codePanel = document.getElementById("code-panel");
+
+let dragging = false;
+
+divider.addEventListener("mousedown", () => {
+  dragging = true;
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (!dragging) return;
+  const main = divider.parentElement;
+  const mainRect = main.getBoundingClientRect();
+  const leftWidth = e.clientX - mainRect.left;
+  const totalWidth = mainRect.width - 6; // minus divider width
+
+  // clamp so panels don't get too small
+  if (leftWidth < 250 || leftWidth > totalWidth - 180) return;
+
+  blocklyWrap.style.flex = "none";
+  blocklyWrap.style.width = leftWidth + "px";
+  codePanel.style.flex = "none";
+  codePanel.style.width = totalWidth - leftWidth + "px";
+
+  Blockly.svgResize(workspace);
+});
+
+document.addEventListener("mouseup", () => {
+  dragging = false;
+});
+
+// ── View toggle (Blocks / Blocks + Code) ──────────────────
+document.getElementById("view-select").addEventListener("change", function () {
+  if (this.value === "blocks") {
+    codePanel.style.display = "none";
+    divider.style.display = "none";
+    blocklyWrap.style.width = "100%";
+  } else {
+    codePanel.style.display = "flex";
+    divider.style.display = "block";
+    blocklyWrap.style.width = "";
+    blocklyWrap.style.flex = "2";
+    codePanel.style.width = "";
+    codePanel.style.flex = "1";
+  }
+  Blockly.svgResize(workspace);
+});
+
+// ── Copy button ───────────────────────────────────────────
+document.getElementById("btn-copy").addEventListener("click", function () {
+  const code = document.getElementById("code-view").innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    this.textContent = "Copied!";
+    setTimeout(() => (this.textContent = "Copy"), 1500);
+  });
+});
+
+// ── Clear all workspace blocks ─────────────────────────────
+document
+  .getElementById("btn-clear-workspace")
+  .addEventListener("click", function () {
+    if (confirm("Clear all blocks?")) {
+      workspace.clear();
+    }
+  });
+
+// ── Close overlay ──────────────────────────────────────────
+function closeOverlay() {
+  document.getElementById("overlay").style.display = "none";
+}
 // ── 1. Grab elements we need ──────────────────────────────
 const programList = document.getElementById("program-list");
-const btnClear    = document.getElementById("btn-clear");
-const btnPlay     = document.getElementById("btn-play");
+const btnClear = document.getElementById("btn-clear");
+const btnPlay = document.getElementById("btn-play");
 
 // ── 2. Define your blocks ─────────────────────────────────
 // Each block has a label, a command name, and a default value
 const blocks = [
   { label: "▶ Move Forward", cmd: "move_forward", value: 10 },
-  { label: "◀ Move Back",    cmd: "move_back",    value: 10 },
-  { label: "↰ Turn Left",    cmd: "turn_left",    value: 90 },
-  { label: "↱ Turn Right",   cmd: "turn_right",   value: 90 },
-  { label: "🔔 Beep",        cmd: "beep",         value: 0  },
-  { label: "⏱ Wait",         cmd: "wait",         value: 1  },
+  { label: "◀ Move Back", cmd: "move_back", value: 10 },
+  { label: "↰ Turn Left", cmd: "turn_left", value: 90 },
+  { label: "↱ Turn Right", cmd: "turn_right", value: 90 },
+  { label: "🔔 Beep", cmd: "beep", value: 0 },
+  { label: "⏱ Wait", cmd: "wait", value: 1 },
 ];
 
 // ── 3. Attach click listeners to every block button ───────
 const blockButtons = document.querySelectorAll(".block");
 
-blockButtons.forEach(function(btn, index) {
-  btn.addEventListener("click", function() {
+blockButtons.forEach(function (btn, index) {
+  btn.addEventListener("click", function () {
     addBlock(blocks[index]);
   });
 });
@@ -37,7 +109,7 @@ function addBlock(block) {
   item.textContent = getLabel(block);
 
   // store the command data on the element so we can read it later
-  item.dataset.cmd   = block.cmd;
+  item.dataset.cmd = block.cmd;
   item.dataset.value = block.value;
 
   programList.appendChild(item);
@@ -45,21 +117,25 @@ function addBlock(block) {
 
 // ── 5. Build a readable label ─────────────────────────────
 function getLabel(block) {
-  if (block.cmd === "move_forward") return block.label + " — " + block.value + " cm";
-  if (block.cmd === "move_back")    return block.label + " — " + block.value + " cm";
-  if (block.cmd === "turn_left")    return block.label + " — " + block.value + "°";
-  if (block.cmd === "turn_right")   return block.label + " — " + block.value + "°";
-  if (block.cmd === "wait")         return block.label + " — " + block.value + " sec";
+  if (block.cmd === "move_forward")
+    return block.label + " — " + block.value + " cm";
+  if (block.cmd === "move_back")
+    return block.label + " — " + block.value + " cm";
+  if (block.cmd === "turn_left") return block.label + " — " + block.value + "°";
+  if (block.cmd === "turn_right")
+    return block.label + " — " + block.value + "°";
+  if (block.cmd === "wait") return block.label + " — " + block.value + " sec";
   return block.label;
 }
 
 // ── 6. Clear button ───────────────────────────────────────
-btnClear.addEventListener("click", function() {
-  programList.innerHTML = "<p class='empty-msg'>Click a block to add it here</p>";
+btnClear.addEventListener("click", function () {
+  programList.innerHTML =
+    "<p class='empty-msg'>Click a block to add it here</p>";
 });
 
 // ── Play button ───────────────────────────────────────────
-btnPlay.addEventListener("click", function() {
+btnPlay.addEventListener("click", function () {
   if (!isConnected) {
     alert("Not connected to robot! Connect to the robot's WiFi first.");
     return;
@@ -78,27 +154,28 @@ btnPlay.addEventListener("click", function() {
   runProgram(commands);
 });
 
-  // build the command list
-  const commands = [];
-  items.forEach(function(item) {
-    commands.push({
-      cmd:   item.dataset.cmd,
-      value: Number(item.dataset.value),
-    });
+// build the command list
+const commands = [];
+items.forEach(function (item) {
+  commands.push({
+    cmd: item.dataset.cmd,
+    value: Number(item.dataset.value),
   });
+});
 function programFinished() {
-  isRunning            = false;
-  btnPlay.textContent  = "";
-  btnPlay.innerHTML    = '<span class="play-icon">▶</span><span class="play-text">Play!</span>';
-  btnPlay.disabled     = false;
+  isRunning = false;
+  btnPlay.textContent = "";
+  btnPlay.innerHTML =
+    '<span class="play-icon">▶</span><span class="play-text">Play!</span>';
+  btnPlay.disabled = false;
   setStatus("connected", "Connected");
 
   // show the celebration overlay
   document.getElementById("overlay").style.display = "flex";
 }
 
-  // ── Step counter (updates the "3 steps" badge) ────────────
-workspace.addChangeListener(function() {
+// ── Step counter (updates the "3 steps" badge) ────────────
+workspace.addChangeListener(function () {
   const items = programList.querySelectorAll(".program-item");
   const count = items.length;
   document.getElementById("step-count").textContent =
@@ -109,4 +186,3 @@ workspace.addChangeListener(function() {
 function closeOverlay() {
   document.getElementById("overlay").style.display = "none";
 }
-
