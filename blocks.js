@@ -268,12 +268,16 @@ const toolbox = {
       name: "Output",
       colour: "#4598FC",
       contents: [
-        { kind:"category", name:"Output",    colour:"#4598FC"},
-        { kind:"category", name:"Input",     colour:"#9965F9" },
-        { kind:"category", name:"Notation",  colour:"#959593" },
-        { kind:"category", name:"Control",   colour:"#FCAA1A" },
-        { kind:"category", name:"Math",      colour:"#42BC49" },
-        { kind:"category", name:"Variables", colour:"#D55CD6", custom:"VARIABLE" }
+        { kind: "block", type: "robot_led_on" },
+        { kind: "block", type: "robot_led_off" },
+        { kind: "block", type: "robot_beep" },
+        { kind: "block", type: "robot_servo" },
+        { kind: "block", type: "robot_move_forward" },
+        { kind: "block", type: "robot_move_back" },
+        { kind: "block", type: "robot_turn_left" },
+        { kind: "block", type: "robot_turn_right" },
+        { kind: "block", type: "robot_stop" },
+        { kind: "block", type: "robot_set_speed" },
       ],
     },
     {
