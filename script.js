@@ -58,15 +58,25 @@ btnClear.addEventListener("click", function() {
   programList.innerHTML = "<p class='empty-msg'>Click a block to add it here</p>";
 });
 
-// ── 7. Play button (placeholder for now) ──────────────────
+// ── Play button ───────────────────────────────────────────
 btnPlay.addEventListener("click", function() {
-  // collect all commands in order
-  const items = programList.querySelectorAll(".program-item");
-
-  if (items.length === 0) {
-    alert("Add some blocks first!");
+  if (!isConnected) {
+    alert("Not connected to robot! Connect to the robot's WiFi first.");
     return;
   }
+  if (isRunning) return;
+
+  // get commands from Blockly workspace  ← this is the only change
+  const commands = getProgramCommands();
+
+  if (commands.length === 0) {
+    alert("Drag some blocks into the workspace first!");
+    return;
+  }
+
+  console.log("Running program:", commands);
+  runProgram(commands);
+});
 
   // build the command list
   const commands = [];
@@ -76,14 +86,27 @@ btnPlay.addEventListener("click", function() {
       value: Number(item.dataset.value),
     });
   });
+function programFinished() {
+  isRunning            = false;
+  btnPlay.textContent  = "";
+  btnPlay.innerHTML    = '<span class="play-icon">▶</span><span class="play-text">Play!</span>';
+  btnPlay.disabled     = false;
+  setStatus("connected", "Connected");
 
-  console.log("Program to run:", commands);
-  alert("Program ready! Check the console. WebSocket comes in Step 3.");
+  // show the celebration overlay
+  document.getElementById("overlay").style.display = "flex";
+}
+
+  // ── Step counter (updates the "3 steps" badge) ────────────
+workspace.addChangeListener(function() {
+  const items = programList.querySelectorAll(".program-item");
+  const count = items.length;
+  document.getElementById("step-count").textContent =
+    count === 0 ? "0 steps" : count + (count === 1 ? " step" : " steps");
 });
 
+// ── Close overlay ─────────────────────────────────────────
+function closeOverlay() {
+  document.getElementById("overlay").style.display = "none";
+}
 
-
-
-
- git config --global user.email "you@example.com"
-  git config --global user.name "Your Name"

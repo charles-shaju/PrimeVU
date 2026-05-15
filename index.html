@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robot Coder</title>
+  <title>Robot Coder 🤖</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Top bar -->
+  <!-- Header -->
   <header>
-    <span>🤖 Robot Coder</span>
-    <div class="status">
+    <div class="logo">🤖 Robot Coder</div>
+    <div class="status" id="status-bar">
       <span class="dot" id="status-dot"></span>
       <span id="status-text">Not connected</span>
     </div>
@@ -19,35 +21,49 @@
 
   <!-- Main workspace -->
   <div class="workspace">
+    <!-- Blockly takes the left side -->
+    <div id="blockly-div"></div>
 
-    <!-- Left: block buttons -->
-    <div class="blocks-panel">
-      <h2>Blocks</h2>
-
-      <button class="block move">▶ Move Forward</button>
-      <button class="block move">◀ Move Back</button>
-      <button class="block turn">↰ Turn Left</button>
-      <button class="block turn">↱ Turn Right</button>
-      <button class="block sound">🔔 Beep</button>
-      <button class="block wait">⏱ Wait</button>
-    </div>
-
-    <!-- Right: program area -->
+    <!-- Right panel: run log -->
     <div class="stage-panel">
-      <h2>My Program</h2>
+      <div class="stage-header">
+        <h2>📋 My Program</h2>
+        <span class="step-count" id="step-count">0 steps</span>
+      </div>
       <div class="program-list" id="program-list">
-        <p class="empty-msg">Click a block to add it here</p>
+        <div class="empty-state">
+          <div class="empty-icon">👈</div>
+          <p>Drag blocks here to build your program!</p>
+        </div>
       </div>
     </div>
-
   </div>
 
-  <!-- Bottom bar -->
+  <!-- Footer -->
   <footer>
-    <button class="btn-clear" id="btn-clear">🗑 Clear</button>
-    <button class="btn-play" id="btn-play">▶ Play</button>
+    <button class="btn-clear" id="btn-clear">🗑️ Clear</button>
+    <button class="btn-play" id="btn-play">
+      <span class="play-icon">▶</span>
+      <span class="play-text">Play!</span>
+    </button>
   </footer>
 
+  <!-- Success overlay (shows when program finishes) -->
+  <div class="overlay" id="overlay" style="display:none">
+    <div class="overlay-card">
+      <div class="overlay-emoji">🎉</div>
+      <h2>Program Done!</h2>
+      <p>Your robot finished all the steps!</p>
+      <button onclick="closeOverlay()">▶ Run Again</button>
+    </div>
+  </div>
+
+  <!-- Blockly scripts -->
+  <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/msg/en.js"></script>
+  <script src="blocks.js"></script>
   <script src="script.js"></script>
+
 </body>
 </html>
+
