@@ -449,7 +449,7 @@ Blockly.defineBlocksWithJsonArray([
   {
     "type": "tinkercad_analog_read",
     "message0": "read analog pin %1",
-    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["A0","A0"],["A1","A1"],["A2","A2"],["A3","A3"],["A4","A4"],["A5","A5"]] }],
+    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["02","02"],["04","04"],["12","12"],["13","13"],["14","14"],["15","15"],["25","25"],["26","26"],["27","27"],["32","32"],["33","33"],["34","34"],["35","35"],["36","36"],["39","39"]] }],
     "output": "Number",
     "colour": "#9965F9"
   },
@@ -457,7 +457,12 @@ Blockly.defineBlocksWithJsonArray([
   {
     "type": "tinkercad_servo_read",
     "message0": "read degrees of servo on pin %1",
-    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["0","0"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"]] }],
+    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [
+      ["0","0"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],
+      ["10","10"],["11","11"],["12","12"],["13","13"],["14","14"],["15","15"],["16","16"],["17","17"],["18","18"],["19","19"],
+      ["20","20"],["21","21"],["22","22"],["23","23"],["24","24"],["25","25"],["26","26"],["27","27"],["28","28"],["29","29"],
+      ["30","30"],["31","31"],["32","32"],["33","33"],["34","34"],["35","35"],["36","36"],["37","37"],["38","38"],["39","39"]
+    ] }],
     "output": "Number",
     "colour": "#9965F9"
   },
@@ -490,7 +495,7 @@ Blockly.defineBlocksWithJsonArray([
     "type": "tinkercad_temperature",
     "message0": "read temperature sensor on pin %1 in units %2",
     "args0": [
-      { "type": "field_dropdown", "name": "PIN", "options": [["A0","A0"],["A1","A1"],["A2","A2"]] },
+      { "type": "field_dropdown", "name": "PIN", "options": [["02","02"],["04","04"],["12","12"],["13","13"],["14","14"],["15","15"],["25","25"],["26","26"],["27","27"],["32","32"],["33","33"],["34","34"],["35","35"],["36","36"],["39","39"]] },
       { "type": "field_dropdown", "name": "UNIT", "options": [["°C","C"],["°F","F"]] }
     ],
     "output": "Number",
@@ -502,6 +507,76 @@ Blockly.defineBlocksWithJsonArray([
     "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["0","0"],["1","1"],["2","2"]] }],
     "output": "Number",
     "colour": "#9965F9"
+  },
+  {
+    "type": "notation_title_comment",
+    "message0": "title block comment %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "TEXT",
+        "text": "describe your code here"
+      }
+    ],
+    "nextStatement": null,
+    "colour": "#959593",
+    "tooltip": "Add a multi-line header comment to your code"
+  },
+  {
+    "type": "notation_single_comment",
+    "message0": "comment %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "TEXT",
+        "text": "helpful single-line comment here"
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#959593",
+    "tooltip": "Add a single-line comment"
+  },
+  // 1. Variable Get Block (The pill-shaped 'i' and 'j' blocks)
+  {
+    "type": "variables_get_custom",
+    "message0": "%1",
+    "args0": [
+      {
+        "type": "field_variable",
+        "name": "VAR",
+        "variable": "i"
+      }
+    ],
+    "output": null,
+    "colour": "#D55CD6",
+    "tooltip": "Get the value of this variable."
+  },
+  // 2. Variable Set Block (set [i] to [32])
+  {
+    "type": "variables_set_custom",
+    "message0": "set %1 to %2",
+    "args0": [
+      { "type": "field_variable", "name": "VAR", "variable": "i" },
+      { "type": "input_value", "name": "VALUE" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#D55CD6",
+    "tooltip": "Set the variable to a specific value."
+  },
+  // 3. Variable Change Block (change [i] by [1])
+  {
+    "type": "variables_change_custom",
+    "message0": "change %1 by %2",
+    "args0": [
+      { "type": "field_variable", "name": "VAR", "variable": "i" },
+      { "type": "input_value", "name": "VALUE" }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": "#D55CD6",
+    "tooltip": "Add a value to the variable."
   }
 ]);
 
@@ -549,11 +624,12 @@ function resetGeneratorState() {
 }
 
 function buildProgramSections() {
-  arduinoGenerator.init(workspace);
+  // Ensure the generator state and lookup functions are initialized
+  resetGeneratorState();
   
   // Find the main "Start/Forever" block
   const setupLoopBlock = workspace.getBlocksByType('esp32_setup_loop', false)[0];
-  let setupCode = '', loopCode = '';
+  let setupCode = '', loopCode = '', titleComment = '';
 
   if (setupLoopBlock) {
     setupCode = arduinoGenerator.statementToCode(setupLoopBlock, 'SETUP');
@@ -562,12 +638,16 @@ function buildProgramSections() {
     // If no Start block exists, grab everything loose on the canvas
     workspace.getTopBlocks(true).forEach(block => {
       let generated = arduinoGenerator.blockToCode(block);
-      
-      // If it's a value block (like Math), add a semicolon to make it a line of code
+
+      if (block.type === 'notation_title_comment') {
+        titleComment = generated || '';
+        return;
+      }
+
+      // If it's a value block (returns an array), turn it into a statement for the preview
       if (Array.isArray(generated)) {
         generated = generated[0] + ";";
       }
-      
       if (generated) loopCode += generated + "\n";
     });
   }
@@ -575,7 +655,7 @@ function buildProgramSections() {
   const definitions = Object.values(arduinoGenerator.definitions_ || {}).join('\n');
   const setups = Object.values(arduinoGenerator.setups_ || {}).map(s => "  " + s).join('\n');
 
-  return { setupCode, loopCode, definitions, setups };
+  return { setupCode, loopCode, definitions, setups, titleComment };
 }
 arduinoGenerator.forBlock['tinkercad_if_else'] = function(block) {
   // 1. Get the condition code
@@ -694,11 +774,66 @@ arduinoGenerator.forBlock['tinkercad_temperature'] = function(block) {
 };
 
 arduinoGenerator.forBlock['tinkercad_ir_sensor'] = function(block) {
+  // Include the IR library
   arduinoGenerator.definitions_['include_ir'] = '#include <IRremote.h>';
-  // Helper functions based on TinkerCAD's complex IR mapping logic
-  arduinoGenerator.definitions_['func_ir_map'] = `int mapCodeToButton(unsigned long code) { ... }`; 
-  arduinoGenerator.definitions_['func_ir_read'] = `int readInfrared() { ... }`;
-  
+
+  // Global counters (kept for compatibility with example code)
+  arduinoGenerator.definitions_['var_ir_i'] = 'int i = 0;';
+  arduinoGenerator.definitions_['var_ir_j'] = 'int j = 0;';
+
+  // Map the IR code to the corresponding remote button.
+  // Return -1 if the supplied code does not map to a key.
+  arduinoGenerator.definitions_['func_ir_map'] =
+`// Map the IR code to the corresponding remote button.
+// The buttons are in this order on the remote:
+//    0   1   2
+//    4   5   6
+//    8   9  10
+//   12  13  14
+//   16  17  18
+//   20  21  22
+//   24  25  26
+//
+// Return -1, if supplied code does not map to a key.
+int mapCodeToButton(unsigned long code) {
+  // For the remote used in the Tinkercad simulator,
+  // the buttons are encoded such that the hex code
+  // received is of the format: 0xiivvBF00
+  // Where the vv is the button value, and ii is
+  // the bit-inverse of vv.
+
+  // Check for codes from this specific remote
+  if ((code & 0x0000FFFF) == 0x0000BF00) {
+    // No longer need the lower 16 bits. Shift the code by 16
+    // to make the rest easier.
+    code >>= 16;
+    // Check that the value and inverse bytes are complementary.
+    if (((code >> 8) ^ (code & 0x00FF)) == 0x00FF) {
+      return code & 0xFF;
+    }
+  }
+  return -1;
+}`;
+
+  // readInfrared: attempts to decode an IR code and map it to a button
+  arduinoGenerator.definitions_['func_ir_read'] =
+`int readInfrared() {
+  int result = -1;
+  // Check if we've received a new code
+  if (IrReceiver.decode()) {
+    // Get the infrared code
+    unsigned long code = IrReceiver.decodedIRData.decodedRawData;
+    // Map it to a specific button on the remote
+    result = mapCodeToButton(code);
+    // Enable receiving of the next value
+    IrReceiver.resume();
+  }
+  return result;
+}`;
+
+  // Ensure the IR receiver is initialized in setup when this block is present
+  arduinoGenerator.setups_['setup_ir'] = 'IrReceiver.begin(0);';
+
   return [`readInfrared()`, arduinoGenerator.ORDER_ATOMIC];
 };
 arduinoGenerator.forBlock['esp32_digital_read'] = function(block) {
@@ -865,6 +1000,17 @@ arduinoGenerator.forBlock['tinkercad_if'] = function(block) {
   const branch = arduinoGenerator.statementToCode(block, 'DO0');
   return `if (${argument}) {\n${branch}}\n`;
 };
+arduinoGenerator.forBlock['notation_title_comment'] = function(block) {
+  const text = block.getFieldValue('TEXT');
+  // Returns a multi-line C-style comment block
+  return `/*\n  ${text}\n*/\n`;
+};
+
+arduinoGenerator.forBlock['notation_single_comment'] = function(block) {
+  const text = block.getFieldValue('TEXT');
+  // Returns a single-line C++ style comment
+  return `// ${text}\n`;
+};
 
 
 const toolbox = {
@@ -891,7 +1037,6 @@ const toolbox = {
       name: "Input",
       colour: "#9965F9",
       contents: [
-        { kind: "block", type: "esp32_digital_read" },
         { kind: "block", type: "tinkercad_digital_read" },
         { kind: "block", type: "tinkercad_analog_read" },
         { kind: "block", type: "tinkercad_servo_read" },
@@ -930,6 +1075,15 @@ const toolbox = {
         { kind: "block", type: "tinkercad_if" },
         { kind: "block", type: "tinkercad_if_else" },
         { kind: "block", type: "tinkercad_count" }
+      ],
+    },
+    {
+      kind: "category",
+      name: "Notation",
+      colour: "#959593",
+      contents: [
+        { kind: "block", type: "notation_title_comment" },
+        { kind: "block", type: "notation_single_comment" }
       ],
     },
     {
@@ -976,25 +1130,31 @@ const workspace = Blockly.inject("blockly-div", {
 // ═══════════════════════════════════════════════
 function updateCodePanel() {
   const view = document.getElementById("code-view");
-  const { setupCode, loopCode, definitions, setups } = buildProgramSections();
+  const { setupCode, loopCode, definitions, setups, titleComment } = buildProgramSections();
  
   const fullCode =
-`// Auto-generated Arduino Code for ESP32
-${definitions}
+  `// Auto-generated Arduino Code for ESP32
+  ${titleComment}
+  ${definitions}
 
-void setup() {
-  Serial.begin(115200);
-${setups}
-${setupCode}}
+  void setup() {
+  ${setups}
+  ${setupCode}}
  
-void loop() {
-${loopCode}
-  delay(10); // Standard simulation delay
-}`;
+  void loop() {
+  ${loopCode}
+    delay(10); // Standard simulation delay
+  }`;
  
   // Simple Highlighter
-  view.innerHTML = fullCode
-    // Add "for" and "int" to the highlighted commands
+  // Escape HTML so C++ angle-bracket includes render correctly in the preview
+  const escaped = fullCode
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  view.innerHTML = escaped
+    // Add keywords to the highlighted commands
     .replace(/\b(for|int|void|setup|loop|if|else|pinMode|delay|Serial|begin)\b/g, '<span class="cmd">$1</span>')
     .replace(/(\/\/.*$)/gm, '<span class="cmt">$1</span>');
 }
@@ -1035,3 +1195,35 @@ setTimeout(function () {
     toolboxObj.selectItemByPosition(0);
   }
 }, 100);
+
+// Keep category open after selecting a block from its flyout.
+// When a user drags a block from a category into the workspace the
+// flyout may close; this listener re-selects the category that
+// contains the newly created block so the flyout stays visible.
+workspace.addChangeListener(function(event) {
+  try {
+    if (event.type === Blockly.Events.BLOCK_CREATE) {
+      const ids = event.ids || (event.blockId ? [event.blockId] : []);
+      const id = Array.isArray(ids) ? ids[0] : ids;
+      if (!id) return;
+      const block = workspace.getBlockById(id);
+      if (!block) return;
+
+      const type = block.type;
+      let index = -1;
+      for (let i = 0; i < toolbox.contents.length; i++) {
+        const item = toolbox.contents[i];
+        if (item.kind === 'category' && item.contents) {
+          if (item.contents.some(c => c.type === type)) { index = i; break; }
+        } else if (item.type === type) { index = i; break; }
+      }
+
+      const toolboxObj = workspace.getToolbox && workspace.getToolbox();
+      if (index >= 0 && toolboxObj && typeof toolboxObj.selectItemByPosition === 'function') {
+        toolboxObj.selectItemByPosition(index);
+      }
+    }
+  } catch (e) {
+    console.error('Toolbox keep-open listener error:', e);
+  }
+});
