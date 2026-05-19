@@ -246,6 +246,20 @@ Blockly.defineBlocksWithJsonArray([
     "output": "Number",
     "colour": "#42BC49"
   },
+  {
+    "type": "math_number",
+    "message0": "%1",
+    "args0": [
+      {
+        "type": "field_number",
+        "name": "NUM",
+        "value": 0
+      }
+    ],
+    "output": "Number",
+    "colour": "#42BC49",
+    "tooltip": "A number value"
+  },
   // Comparison Operator
   {
     "type": "math_compare_custom",
@@ -544,20 +558,27 @@ Blockly.defineBlocksWithJsonArray([
     "args0": [
       {
         "type": "field_variable",
-        "name": "VAR",
-        "variable": "i"
+        "name": "VAR"
       }
     ],
-    "output": null,
+    "output": "Number",
     "colour": "#D55CD6",
     "tooltip": "Get the value of this variable."
+  },
+  // Non-editable fixed 'i' variable (label-only)
+  {
+    "type": "variable_i_block",
+    "message0": "i",
+    "output": "Number",
+    "colour": "#D55CD6",
+    "tooltip": "Read-only variable i"
   },
   // 2. Variable Set Block (set [i] to [32])
   {
     "type": "variables_set_custom",
     "message0": "set %1 to %2",
     "args0": [
-      { "type": "field_variable", "name": "VAR", "variable": "i" },
+      { "type": "field_variable", "name": "VAR" },
       { "type": "input_value", "name": "VALUE" }
     ],
     "previousStatement": null,
@@ -570,7 +591,7 @@ Blockly.defineBlocksWithJsonArray([
     "type": "variables_change_custom",
     "message0": "change %1 by %2",
     "args0": [
-      { "type": "field_variable", "name": "VAR", "variable": "i" },
+      { "type": "field_variable", "name": "VAR" },
       { "type": "input_value", "name": "VALUE" }
     ],
     "previousStatement": null,
@@ -596,6 +617,9 @@ arduinoGenerator.ORDER_RELATIONAL = 6;
 arduinoGenerator.ORDER_EQUALITY = 7;
 arduinoGenerator.ORDER_LOGICAL_AND = 11;
 arduinoGenerator.ORDER_LOGICAL_OR = 12;
+// Missing order constants used by generators
+arduinoGenerator.ORDER_FUNCTION_CALL = 2;
+arduinoGenerator.ORDER_ASSIGNMENT = 14;
 arduinoGenerator.ORDER_NONE = 99;
 
 arduinoGenerator.scrub_ = function(block, code, thisOnly) {
@@ -622,6 +646,15 @@ function resetGeneratorState() {
     });
   }
 }
+  // Inject declarations for all workspace variables so the preview shows them
+  try {
+    const vars = workspace.getAllVariables ? workspace.getAllVariables() : (workspace.getVariableMap ? workspace.getVariableMap().getAllVariables() : []);
+    (vars || []).forEach(v => {
+      const nm = v.name;
+      const tp = v.type || 'int';
+      arduinoGenerator.definitions_['var_' + nm] = tp + ' ' + nm + ' = ' + _varDefault(tp) + ';';
+    });
+  } catch (e) { /* ignore if API differs */ }
 
 function buildProgramSections() {
   // Ensure the generator state and lookup functions are initialized
@@ -655,7 +688,22 @@ function buildProgramSections() {
   const definitions = Object.values(arduinoGenerator.definitions_ || {}).join('\n');
   const setups = Object.values(arduinoGenerator.setups_ || {}).map(s => "  " + s).join('\n');
 
-  return { setupCode, loopCode, definitions, setups, titleComment };
+  // Ensure every workspace variable has a global declaration in definitions_
+  try {
+    const vars = workspace.getAllVariables ? workspace.getAllVariables() : (workspace.getVariableMap ? workspace.getVariableMap().getAllVariables() : []);
+    (vars || []).forEach(v => {
+      const key = 'var_' + v.name;
+      if (!arduinoGenerator.definitions_[key]) {
+        const tp = v.type || 'int';
+        arduinoGenerator.definitions_[key] = tp + ' ' + v.name + ' = ' + _varDefault(tp) + ';';
+      }
+    });
+  } catch (e) { /* ignore */ }
+
+  // Recompute definitions string after possibly injecting variable decls
+  const definitionsUpdated = Object.values(arduinoGenerator.definitions_ || {}).join('\n');
+
+  return { setupCode, loopCode, definitions: definitionsUpdated || definitions, setups, titleComment };
 }
 arduinoGenerator.forBlock['tinkercad_if_else'] = function(block) {
   // 1. Get the condition code
@@ -991,6 +1039,12 @@ arduinoGenerator.forBlock['math_constrain'] = function(block) {
   return [`constrain(${val}, ${min}, ${max})`, arduinoGenerator.ORDER_FUNCTION_CALL];
 };
 
+// Number literal
+arduinoGenerator.forBlock['math_number'] = function(block) {
+  const num = block.getFieldValue('NUM');
+  return [String(num), arduinoGenerator.ORDER_ATOMIC];
+};
+
 arduinoGenerator.forBlock['math_constant_high_low'] = function(block) {
   return [block.getFieldValue('STATE'), arduinoGenerator.ORDER_ATOMIC];
 };
@@ -1012,6 +1066,63 @@ arduinoGenerator.forBlock['notation_single_comment'] = function(block) {
   return `// ${text}\n`;
 };
 
+
+// ═══════════════════════════════════════════════
+// VARIABLE GENERATORS
+// ═══════════════════════════════════════════════
+
+// Helper: resolve variable name + type from a block VAR field
+function _varInfo(block) {
+  const id  = block.getFieldValue('VAR');
+  const v   = workspace.getVariableById(id);
+  return v ? { name: v.name, type: v.type || 'int' } : { name: 'x', type: 'int' };
+}
+// Helper: default C++ value for each type
+function _varDefault(type) {
+  return type === 'String' ? '""' : type === 'bool' ? 'false' : type === 'float' ? '0.0' : '0';
+}
+// Helper: inject global declaration
+function _varDecl(name, type) {
+  arduinoGenerator.definitions_['var_' + name] =
+    type + ' ' + name + ' = ' + _varDefault(type) + ';';
+}
+
+// GET  — pill-shaped block that returns the variable value
+function _genGet(block) {
+  const { name, type } = _varInfo(block);
+  _varDecl(name, type);
+  return [name, arduinoGenerator.ORDER_ATOMIC];
+}
+arduinoGenerator.forBlock['variables_get']        = _genGet;
+arduinoGenerator.forBlock['variables_get_custom'] = _genGet;
+
+// SET  — "set [var] to [value]"
+function _genSet(block) {
+  const { name, type } = _varInfo(block);
+  const val = arduinoGenerator.valueToCode(
+    block, 'VALUE', arduinoGenerator.ORDER_ASSIGNMENT) || _varDefault(type);
+  _varDecl(name, type);
+  return name + ' = ' + val + ';\n';
+}
+arduinoGenerator.forBlock['variables_set']        = _genSet;
+arduinoGenerator.forBlock['variables_set_custom'] = _genSet;
+
+// CHANGE  — "change [var] by [delta]"
+function _genChange(block) {
+  const { name, type } = _varInfo(block);
+  const delta = arduinoGenerator.valueToCode(
+    block, 'VALUE', arduinoGenerator.ORDER_ADDITIVE) || '1';
+  _varDecl(name, type);
+  return name + ' += ' + delta + ';\n';
+}
+arduinoGenerator.forBlock['math_change']             = _genChange;
+arduinoGenerator.forBlock['variables_change_custom'] = _genChange;
+
+// Generator for the non-editable 'i' block
+arduinoGenerator.forBlock['variable_i_block'] = function(block) {
+  _varDecl('i', 'int');
+  return ['i', arduinoGenerator.ORDER_ATOMIC];
+};
 
 const toolbox = {
   kind: "categoryToolbox",
@@ -1090,26 +1201,26 @@ const toolbox = {
       kind: "category",
       name: "Variables",
       colour: "#D55CD6",
-      custom: "VARIABLE",
-    },
-    {
-  kind: "block",
-  type: "math_arithmetic_custom",
-  inputs: {
-    A: {
-      shadow: {
-        type: "math_number",
-        fields: { NUM: 1 }
-      }
-    },
-    B: {
-      shadow: {
-        type: "math_number",
-        fields: { NUM: 1 }
-      }
+      contents: [
+        { kind: "block", type: "variable_i_block" },
+        { kind: "block", type: "variables_get_custom" },
+        {
+          kind: "block",
+          type: "variables_set_custom",
+          inputs: { "VALUE": { "shadow": { "type": "math_number", "fields": { "NUM": 0 } } } }
+        },
+        {
+          kind: "block",
+          type: "variables_change_custom",
+          inputs: { "VALUE": { "shadow": { "type": "math_number", "fields": { "NUM": 1 } } } }
+        },
+        {
+          kind: "button",
+          text: "Create variable...",
+          callbackKey: "CREATE_VARIABLE"
+        }
+      ]
     }
-  }
-}
   ],
 };
 
@@ -1132,10 +1243,23 @@ function updateCodePanel() {
   const view = document.getElementById("code-view");
   const { setupCode, loopCode, definitions, setups, titleComment } = buildProgramSections();
  
+  // Ensure preview includes declarations for all workspace variables
+  let definitionsCombined = definitions || '';
+  try {
+    const vars = workspace.getAllVariables ? workspace.getAllVariables() : (workspace.getVariableMap ? workspace.getVariableMap().getAllVariables() : []);
+    const varDecls = (vars || []).map(v => {
+      const tp = v.type || 'int';
+      return tp + ' ' + v.name + ' = ' + _varDefault(tp) + ';';
+    });
+    const existing = (definitions || '').split('\n').filter(Boolean);
+    const merged = Array.from(new Set(varDecls.concat(existing)));
+    definitionsCombined = merged.join('\n');
+  } catch (e) { /* ignore */ }
+
   const fullCode =
   `// Auto-generated Arduino Code for ESP32
   ${titleComment}
-  ${definitions}
+  ${definitionsCombined}
 
   void setup() {
   ${setups}
@@ -1189,41 +1313,152 @@ function getProgramCommands() {
   return commands;
 }
  
+// ═══════════════════════════════════════════════════════════════════════════
+// TYPED VARIABLE CREATION MODAL
+// Blockly's custom:"VARIABLE" category shows a "Create variable" button.
+// That button fires the callback registered as 'CREATE_VARIABLE'.
+// We register our own handler here to show a styled modal with type selection.
+// After the user confirms, workspace.createVariable(name, type) is called —
+// Blockly automatically fires VAR_CREATE which refreshes the flyout.
+// ═══════════════════════════════════════════════════════════════════════════
+(function () {
+  // ── 1. Build modal HTML once ─────────────────────────────────────────────
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div id="_vm_overlay" style="display:none;position:fixed;inset:0;
+        background:rgba(0,0,0,.55);z-index:9999;
+        align-items:center;justify-content:center;">
+      <div style="background:#1e2030;border-radius:12px;padding:26px 30px;
+          width:290px;box-shadow:0 8px 32px rgba(0,0,0,.5);
+          font-family:sans-serif;color:#cdd6f4;">
+        <h3 style="margin:0 0 14px;font-size:15px;color:#cba6f7;">
+          Create Variable
+        </h3>
+        <label style="font-size:12px;color:#a6adc8;">Variable name</label><br>
+        <input id="_vm_name" type="text" placeholder="e.g.  speed"
+          style="width:100%;box-sizing:border-box;margin:5px 0 14px;
+                 padding:8px 10px;border-radius:6px;border:1px solid #45475a;
+                 background:#313244;color:#cdd6f4;font-size:14px;outline:none;">
+        <label style="font-size:12px;color:#a6adc8;">Type</label>
+        <div id="_vm_types" style="display:flex;gap:6px;margin:7px 0 20px;
+             flex-wrap:wrap;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="_vm_cancel" style="padding:7px 16px;border-radius:6px;
+              border:1px solid #45475a;background:transparent;
+              color:#a6adc8;cursor:pointer;font-size:13px;">Cancel</button>
+          <button id="_vm_ok" style="padding:7px 16px;border-radius:6px;
+              border:none;background:#cba6f7;color:#1e1e2e;
+              font-weight:bold;cursor:pointer;font-size:13px;">Create</button>
+        </div>
+      </div>
+    </div>
+    <style>
+      ._vmtb { padding:5px 12px;border-radius:5px;border:1px solid #45475a;
+               background:#313244;color:#cdd6f4;cursor:pointer;font-size:12px; }
+      ._vmtb.on { background:#cba6f7!important;color:#1e1e2e!important;
+                  border-color:#cba6f7!important;font-weight:bold; }
+    </style>`;
+  document.body.appendChild(wrap);
+
+  // ── 2. Build type buttons ────────────────────────────────────────────────
+  let _chosenType = 'int';
+  const _typesDiv = document.getElementById('_vm_types');
+  ['int','float','bool','String'].forEach(function(t) {
+    const b = document.createElement('button');
+    b.className = '_vmtb' + (t === 'int' ? ' on' : '');
+    b.textContent = t;
+    b.onclick = function() {
+      _chosenType = t;
+      _typesDiv.querySelectorAll('._vmtb').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+    };
+    _typesDiv.appendChild(b);
+  });
+
+  // ── 3. Open / close helpers ──────────────────────────────────────────────
+  function _vmOpen() {
+    _chosenType = 'int';
+    _typesDiv.querySelectorAll('._vmtb').forEach(function(x){ x.classList.remove('on'); });
+    _typesDiv.querySelector('._vmtb').classList.add('on');
+    document.getElementById('_vm_name').value = '';
+    document.getElementById('_vm_overlay').style.display = 'flex';
+    setTimeout(function(){ document.getElementById('_vm_name').focus(); }, 40);
+  }
+  function _vmClose() {
+    document.getElementById('_vm_overlay').style.display = 'none';
+  }
+
+  // Bridge for Blockly.prompt: allow Blockly to use our modal instead of window.prompt
+  let _pendingPromptCallback = null;
+  window._vmPrompt = function(cb) {
+    _pendingPromptCallback = typeof cb === 'function' ? cb : null;
+    _vmOpen();
+  };
+
+  // ── 4. Confirm: create variable + let Blockly refresh flyout ────────────
+  function _vmConfirm() {
+    const raw = (document.getElementById('_vm_name').value || '').trim();
+    if (!raw) { alert('Please enter a variable name.'); return; }
+    // Sanitise: only letters / digits / underscore, cannot start with digit
+    const name = raw.replace(/[^a-zA-Z0-9_]/g,'_').replace(/^([0-9])/,'_$1');
+
+    // Create variable — Blockly fires VAR_CREATE which auto-refreshes the flyout
+    if (!workspace.getVariable(name, _chosenType)) {
+      workspace.createVariable(name, _chosenType);
+    }
+    // Immediately inject a global declaration so the preview shows the variable
+    try {
+      if (typeof _varDecl === 'function') {
+        _varDecl(name, _chosenType);
+      } else if (window.arduinoGenerator && window.arduinoGenerator.definitions_) {
+        // fallback: directly add to definitions_
+        window.arduinoGenerator.definitions_ = window.arduinoGenerator.definitions_ || {};
+        window.arduinoGenerator.definitions_['var_' + name] = _chosenType + ' ' + name + ' = ' + _varDefault(_chosenType) + ';';
+      }
+    } catch (e) { /* ignore */ }
+
+    // Refresh toolbox so the new variable appears in the static flyout
+    try { workspace.updateToolbox(toolbox); } catch (e) { /* ignore */ }
+
+    // Refresh code preview immediately
+    try { if (window.updateCodePanel) window.updateCodePanel(); } catch (e) { /* ignore */ }
+
+    // If Blockly.prompt requested a callback, call it with the created name
+    if (_pendingPromptCallback) {
+      try { _pendingPromptCallback(name); } catch (e) { /* ignore */ }
+      _pendingPromptCallback = null;
+    }
+
+    _vmClose();
+  }
+
+  document.getElementById('_vm_cancel').onclick = _vmClose;
+  document.getElementById('_vm_ok').onclick     = _vmConfirm;
+  document.getElementById('_vm_name').onkeydown = function(e){
+    if (e.key === 'Enter') _vmConfirm();
+  };
+  document.getElementById('_vm_overlay').onclick = function(e){
+    if (e.target.id === '_vm_overlay') _vmClose();
+  };
+
+  // ── 5. Register as the "Create variable" button handler ─────────────────
+  //    Register synchronously now that the modal (_vmOpen) exists.
+  //    'CREATE_VARIABLE' is the callback name Blockly's custom:"VARIABLE" uses.
+  if (workspace && workspace.registerButtonCallback) {
+    try { workspace.registerButtonCallback('CREATE_VARIABLE', _vmOpen); } catch (e) { /* ignore */ }
+  }
+  // Override Blockly.prompt so Blockly's built-in create-variable flow uses our modal
+  if (window.Blockly && typeof window.Blockly.prompt === 'function') {
+    window.Blockly.prompt = function(message, defaultValue, callback) {
+      // Use our modal bridge; Blockly expects prompt to invoke callback with the result
+      window._vmPrompt(callback);
+    };
+  }
+})();
+
 setTimeout(function () {
   const toolboxObj = workspace.getToolbox();
   if (toolboxObj) {
     toolboxObj.selectItemByPosition(0);
   }
 }, 100);
-
-// Keep category open after selecting a block from its flyout.
-// When a user drags a block from a category into the workspace the
-// flyout may close; this listener re-selects the category that
-// contains the newly created block so the flyout stays visible.
-workspace.addChangeListener(function(event) {
-  try {
-    if (event.type === Blockly.Events.BLOCK_CREATE) {
-      const ids = event.ids || (event.blockId ? [event.blockId] : []);
-      const id = Array.isArray(ids) ? ids[0] : ids;
-      if (!id) return;
-      const block = workspace.getBlockById(id);
-      if (!block) return;
-
-      const type = block.type;
-      let index = -1;
-      for (let i = 0; i < toolbox.contents.length; i++) {
-        const item = toolbox.contents[i];
-        if (item.kind === 'category' && item.contents) {
-          if (item.contents.some(c => c.type === type)) { index = i; break; }
-        } else if (item.type === type) { index = i; break; }
-      }
-
-      const toolboxObj = workspace.getToolbox && workspace.getToolbox();
-      if (index >= 0 && toolboxObj && typeof toolboxObj.selectItemByPosition === 'function') {
-        toolboxObj.selectItemByPosition(index);
-      }
-    }
-  } catch (e) {
-    console.error('Toolbox keep-open listener error:', e);
-  }
-});
