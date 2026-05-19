@@ -1,3 +1,6 @@
+// ── Global Variables ──────────────────────────────────────
+let ESP32_IP = ""; // Holds the IP address from Bluetooth pairing
+
 // ── Draggable divider between Blockly and code panel ──────
 const divider = document.getElementById("divider");
 const blocklyWrap = document.getElementById("blockly-wrap");
@@ -63,20 +66,122 @@ document.getElementById("btn-clear-workspace").addEventListener("click", functio
     }
 });
 
-// ── Play button logic ──────────────────────────────────────
+// ── Bluetooth Pairing Logic ────────────────────────────────
+const btnPair = document.getElementById("btn-pair");
+const statusText = document.getElementById("connection-status");
+const headerStatusText = document.getElementById("status-text");
+const statusDot = document.getElementById("status-dot");
+const ESP32_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const ESP32_IP_CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+function setConnectionStatus(message, color) {
+  if (statusText) statusText.innerText = message;
+  if (headerStatusText) headerStatusText.innerText = message;
+  if (statusDot) statusDot.style.background = color;
+  if (statusText) statusText.style.color = color;
+  if (headerStatusText) headerStatusText.style.color = color;
+}
+
+btnPair.addEventListener("click", async () => {
+  try {
+    setConnectionStatus("Scanning...", "orange");
+
+    if (!window.isSecureContext) {
+      throw new Error("Bluetooth requires a secure origin. Open this app from https:// or localhost.");
+    }
+
+    if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== "function") {
+      throw new Error("Web Bluetooth is not available in this browser. Use Chrome or Edge.");
+    }
+
+    // 1. Tell Chrome/Edge to pop up the Bluetooth pairing menu
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [ESP32_SERVICE_UUID]
+    });
+
+    if (!device) {
+      throw new Error("No Bluetooth device was selected.");
+    }
+
+    // 2. Connect to the robot
+    if (!device.gatt) {
+      throw new Error("Selected device does not support GATT.");
+    }
+
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(ESP32_SERVICE_UUID);
+    const characteristic = await service.getCharacteristic(ESP32_IP_CHARACTERISTIC_UUID);
+    
+    // 3. Read the IP Address!
+    const value = await characteristic.readValue();
+    const decoder = new TextDecoder('utf-8');
+    const ipAddress = decoder.decode(value).trim();
+
+    if (!ipAddress) {
+      throw new Error("The ESP32 returned an empty WiFi IP address.");
+    }
+
+    // 4. Save the IP for the Play button to use
+    ESP32_IP = "http://" + ipAddress;
+    
+    setConnectionStatus(`Connected! (${ipAddress})`, "green");
+    
+    // Disconnect Bluetooth (we only needed it to get the IP, we will use WiFi for the code)
+    device.gatt.disconnect();
+
+  } catch (error) {
+    console.error("Bluetooth Error:", error);
+    setConnectionStatus(error && error.message ? error.message : "Pairing Failed", "red");
+  }
+});
+
+// ── Play button logic (Send to ESP32 over WiFi) ────────────
 const btnPlay = document.getElementById("btn-play");
 
-btnPlay.addEventListener("click", function () {
+btnPlay.addEventListener("click", async function () {
   const commands = getProgramCommands();
 
   if (commands.length === 0) {
     alert("Drag some blocks into the workspace first!");
     return;
   }
+  
+  if (!ESP32_IP) {
+    alert("Please pair your robot via Bluetooth first!");
+    return;
+  }
 
-  console.log("Running program:", commands);
-  // Add your connection logic to your ESP32 here
-  programFinished(); 
+  // Update UI to show it's uploading
+  btnPlay.innerHTML = "<span>⏳</span> Uploading...";
+  btnPlay.disabled = true;
+
+  try {
+    console.log("Sending program to ESP32:", commands);
+    
+    // Send the JSON to the ESP32 using the IP we got from Bluetooth
+    const response = await fetch(`${ESP32_IP}/run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain", 
+      },
+      body: JSON.stringify(commands),
+    });
+
+    if (response.ok) {
+      console.log("Upload successful!");
+      programFinished(); // Show success overlay
+    } else {
+      alert("ESP32 received it but returned an error.");
+    }
+  } catch (error) {
+    console.error("Network Error:", error);
+    alert("Could not connect over WiFi. Make sure the robot is on the same network as this device.");
+  } finally {
+    // Reset Play Button
+    btnPlay.innerHTML = '<span>▶</span> Play!';
+    btnPlay.disabled = false;
+  }
 });
 
 function programFinished() {

@@ -1294,22 +1294,20 @@ function getProgramCommands() {
   const { loopCode } = buildProgramSections();
   const trimmedLoop = loopCode.trim();
   if (!trimmedLoop) return [];
-  if (!loopCode) return [];
  
   const commands = [];
- 
   trimmedLoop.split("\n").forEach((line) => {
     line = line.trim();
     if (!line || line === "}") return;
- 
-    const match = line.match(/^(\w+)\(([^)]*)\)/);
+    
+    // Match command and everything inside parentheses
+    const match = line.match(/^([a-zA-Z0-9_.]+)\(([^)]*)\)/);
     if (!match) return;
- 
-    const cmd   = match[1];
-    const value = match[2] ? Number(match[2]) : 0;
-    commands.push({ cmd, value });
+    
+    const cmd  = match[1]; // e.g., "digitalWrite"
+    const args = match[2]; // e.g., "2, HIGH"
+    commands.push({ cmd: cmd, args: args });
   });
- 
   return commands;
 }
  
