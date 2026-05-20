@@ -16,12 +16,13 @@
     <header>
       <div class="logo">
         <img src="logo.jpeg" alt="PrimeVU" class="header-logo" />
-        PrimeVU
+        <img src="PRIMEVU.jpeg" alt="PRIMEVU" class="brand-wordmark" />
       </div>
       <div class="header-controls">
         <select id="board-select">
           <option>ESP32 Robot Kit</option>
         </select>
+        <button id="btn-pair" class="btn-pair">Connect Via Bluetooth</button>
         <div class="status">
           <span class="dot" id="status-dot"></span>
           <span id="status-text">Not connected</span>
@@ -62,11 +63,10 @@
 
     <!-- Footer -->
     <footer>
-      <button class="btn-clear" id="btn-clear">🗑️ Clear Log</button>
       <button class="btn-play" id="btn-play"><span>▶</span> Play!</button>
-      <button id="btn-pair">Pair Robot via Bluetooth</button>
-<span id="connection-status" style="color: red;">Not Connected</span>   
     </footer>
+
+    <div class="notification" id="notification" aria-live="polite" aria-atomic="true"></div>
 
     <!-- Success overlay -->
     <div class="overlay" id="overlay" style="display: none">

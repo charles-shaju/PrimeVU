@@ -1,6 +1,26 @@
 // ── Global Variables ──────────────────────────────────────
 let ESP32_IP = ""; // Holds the IP address from Bluetooth pairing
 
+const notificationEl = document.getElementById("notification");
+
+let notificationTimer = null;
+
+function showNotification(message, type = "warning") {
+  if (!notificationEl) return;
+
+  notificationEl.textContent = message;
+  notificationEl.className = `notification ${type} show`;
+
+  if (notificationTimer) {
+    clearTimeout(notificationTimer);
+  }
+
+  notificationTimer = setTimeout(() => {
+    notificationEl.className = "notification";
+    notificationEl.textContent = "";
+  }, 3500);
+}
+
 // ── Draggable divider between Blockly and code panel ──────
 const divider = document.getElementById("divider");
 const blocklyWrap = document.getElementById("blockly-wrap");
@@ -60,26 +80,29 @@ document.getElementById("btn-copy").addEventListener("click", function () {
 });
 
 // ── Clear all workspace blocks ─────────────────────────────
-document.getElementById("btn-clear-workspace").addEventListener("click", function () {
+const btnClearWorkspace = document.getElementById("btn-clear-workspace");
+if (btnClearWorkspace) {
+  btnClearWorkspace.addEventListener("click", function () {
     if (confirm("Clear all blocks?")) {
       workspace.clear();
     }
-});
+  });
+}
 
 // ── Bluetooth Pairing Logic ────────────────────────────────
 const btnPair = document.getElementById("btn-pair");
-const statusText = document.getElementById("connection-status");
 const headerStatusText = document.getElementById("status-text");
 const statusDot = document.getElementById("status-dot");
 const ESP32_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const ESP32_IP_CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 function setConnectionStatus(message, color) {
-  if (statusText) statusText.innerText = message;
   if (headerStatusText) headerStatusText.innerText = message;
-  if (statusDot) statusDot.style.background = color;
-  if (statusText) statusText.style.color = color;
   if (headerStatusText) headerStatusText.style.color = color;
+  if (statusDot) {
+    statusDot.style.background = color;
+    statusDot.classList.toggle("connected", color === "green");
+  }
 }
 
 btnPair.addEventListener("click", async () => {
@@ -87,10 +110,12 @@ btnPair.addEventListener("click", async () => {
     setConnectionStatus("Scanning...", "orange");
 
     if (!window.isSecureContext) {
+      showNotification("Bluetooth needs a secure connection. Open this app over https:// or localhost.", "warning");
       throw new Error("Bluetooth requires a secure origin. Open this app from https:// or localhost.");
     }
 
     if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== "function") {
+      showNotification("Web Bluetooth is not available here. Use Chrome or Edge.", "warning");
       throw new Error("Web Bluetooth is not available in this browser. Use Chrome or Edge.");
     }
 
@@ -126,12 +151,16 @@ btnPair.addEventListener("click", async () => {
     ESP32_IP = "http://" + ipAddress;
     
     setConnectionStatus(`Connected! (${ipAddress})`, "green");
+    showNotification(`Robot paired successfully: ${ipAddress}`, "success");
     
     // Disconnect Bluetooth (we only needed it to get the IP, we will use WiFi for the code)
     device.gatt.disconnect();
 
   } catch (error) {
     console.error("Bluetooth Error:", error);
+    if (error && error.message) {
+      showNotification(error.message, "error");
+    }
     setConnectionStatus(error && error.message ? error.message : "Pairing Failed", "red");
   }
 });
@@ -143,12 +172,12 @@ btnPlay.addEventListener("click", async function () {
   const commands = getProgramCommands();
 
   if (commands.length === 0) {
-    alert("Drag some blocks into the workspace first!");
+    showNotification("Drag some blocks into the workspace first.", "warning");
     return;
   }
   
   if (!ESP32_IP) {
-    alert("Please pair your robot via Bluetooth first!");
+    showNotification("Pair your robot via Bluetooth first.", "warning");
     return;
   }
 
@@ -170,13 +199,14 @@ btnPlay.addEventListener("click", async function () {
 
     if (response.ok) {
       console.log("Upload successful!");
+      showNotification("Program uploaded successfully.", "success");
       programFinished(); // Show success overlay
     } else {
-      alert("ESP32 received it but returned an error.");
+      showNotification("The robot returned an error while receiving the program.", "error");
     }
   } catch (error) {
     console.error("Network Error:", error);
-    alert("Could not connect over WiFi. Make sure the robot is on the same network as this device.");
+    showNotification("Could not connect over WiFi. Make sure the robot is on the same network.", "error");
   } finally {
     // Reset Play Button
     btnPlay.innerHTML = '<span>▶</span> Play!';
