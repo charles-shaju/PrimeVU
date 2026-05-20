@@ -19,9 +19,7 @@
         <img src="PRIMEVU.jpeg" alt="PRIMEVU" class="brand-wordmark" />
       </div>
       <div class="header-controls">
-        <select id="board-select">
-          <option>ESP32 Robot Kit</option>
-        </select>
+        <span id="board-name" class="board-name" aria-live="polite"></span>
         <button id="btn-pair" class="btn-pair">Connect Via Bluetooth</button>
         <div class="status">
           <span class="dot" id="status-dot"></span>
@@ -36,7 +34,7 @@
         <option value="blocks">Blocks</option>
         <option value="both" selected>Blocks + Code</option>
       </select>
-      <button class="toolbar-btn" id="btn-clear-workspace">🗑️ Clear All</button>
+      <button class="toolbar-btn" id="btn-clear-workspace">Clear All</button>
     </div>
 
     <!-- Main area -->
@@ -52,7 +50,7 @@
       <!-- RIGHT: Code preview -->
       <div class="code-panel" id="code-panel">
         <div class="code-header">
-          <span>📄 Generated Commands</span>
+          <span>Generated Commands</span>
           <button class="copy-btn" id="btn-copy">Copy</button>
         </div>
         <pre class="code-view" id="code-view">
@@ -75,6 +73,29 @@
         <h2>Program Done!</h2>
         <p>Your robot finished all the steps!</p>
         <button onclick="closeOverlay()">▶ Run Again</button>
+      </div>
+    </div>
+
+    <!-- Wi-Fi Setup Modal -->
+    <div class="overlay" id="wifi-modal" style="display: none; z-index: 10000;">
+      <div class="overlay-card wifi-card">
+        <h3>Configure Robot Wi-Fi</h3>
+        <p>Enter the classroom network details so the robot can connect.</p>
+
+        <div class="wifi-field">
+          <label for="wifi-ssid">Wi-Fi SSID (Name)</label>
+          <input type="text" id="wifi-ssid" placeholder="your wifi" />
+        </div>
+
+        <div class="wifi-field">
+          <label for="wifi-pass">Wi-Fi Password</label>
+          <input type="password" id="wifi-pass" placeholder="••••••••••••" />
+        </div>
+
+        <div class="wifi-actions">
+          <button id="btn-cancel-wifi" class="btn-wifi-secondary">Cancel</button>
+          <button id="btn-submit-wifi" class="btn-wifi-primary">Connect Robot</button>
+        </div>
       </div>
     </div>
 
