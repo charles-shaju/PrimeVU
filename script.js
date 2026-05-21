@@ -5,6 +5,7 @@ let serialPollTimer = null;
 let serialPollActive = false;
 let serialLastLogId = 0;
 let serialDisconnectedShown = false;
+let serialDisconnectGraceUntil = 0;
 
 const WIFI_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const WIFI_WRITE_CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -25,6 +26,20 @@ const codeViewElement = document.getElementById("code-view");
 let notificationTimer = null;
 let isCodePanelFocused = false;
 window.isCodePanelFocused = false;
+
+function setPlayButtonState(state) {
+  const btnPlay = document.getElementById("btn-play");
+  if (!btnPlay) return;
+
+  if (state === "running") {
+    btnPlay.innerHTML = "<span>▶</span> Running...";
+    btnPlay.disabled = true;
+    return;
+  }
+
+  btnPlay.innerHTML = '<span>▶</span> Play!';
+  btnPlay.disabled = false;
+}
 
 if (codeViewElement) {
   codeViewElement.addEventListener("focus", () => {
@@ -178,6 +193,11 @@ function stopWirelessSerialMonitor() {
   }
 }
 
+function pauseSerialDisconnectWarnings(ms = 2500) {
+  serialDisconnectGraceUntil = Date.now() + ms;
+  serialDisconnectedShown = false;
+}
+
 async function pollWirelessSerialMonitor(ipAddress) {
   if (!serialPollActive || !serialLogWindow) return;
 
@@ -210,6 +230,9 @@ async function pollWirelessSerialMonitor(ipAddress) {
     serialDisconnectedShown = false;
   } catch (err) {
     console.error("Serial stream disconnected:", err);
+    if (Date.now() < serialDisconnectGraceUntil) {
+      return;
+    }
     if (serialLogWindow && !serialDisconnectedShown) {
       const warning = document.createElement("div");
       warning.className = "log-line";
@@ -424,6 +447,7 @@ btnPlay.addEventListener("click", async function () {
   // Update UI to show it's uploading
   btnPlay.innerHTML = "<span>⏳</span> Uploading...";
   btnPlay.disabled = true;
+  pauseSerialDisconnectWarnings(2500);
 
   try {
     console.log("Sending program to ESP32:", programPayload);
@@ -440,7 +464,8 @@ btnPlay.addEventListener("click", async function () {
     if (response.ok) {
       console.log("Upload successful!");
       showNotification("Program uploaded successfully.", "success");
-      programFinished(); // Show success overlay
+      pauseSerialDisconnectWarnings(1500);
+      setPlayButtonState("running");
     } else {
       showNotification("The robot returned an error while receiving the program.", "error");
     }
@@ -448,17 +473,66 @@ btnPlay.addEventListener("click", async function () {
     console.error("Network Error:", error);
     showNotification("Could not connect over WiFi. Make sure the robot is on the same network.", "error");
   } finally {
-    // Reset Play Button
-    btnPlay.innerHTML = '<span>▶</span> Play!';
-    btnPlay.disabled = false;
+    if (btnPlay.innerText.includes("Uploading")) {
+      setPlayButtonState("idle");
+    }
   }
 });
 
-function programFinished() {
-  document.getElementById("overlay").style.display = "flex";
-}
+// ── Stop button logic (clear robot routine over Wi-Fi) ────
+const btnStop = document.getElementById("btn-stop");
 
-// ── Close overlay ─────────────────────────────────────────
-function closeOverlay() {
-  document.getElementById("overlay").style.display = "none";
+if (btnStop) {
+  btnStop.addEventListener("click", async function () {
+    if (!ESP32_IP) {
+      showNotification("Pair your robot via Bluetooth first.", "warning");
+      return;
+    }
+
+    btnStop.innerText = "⏳ Stopping...";
+    btnStop.disabled = true;
+    pauseSerialDisconnectWarnings(3500);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 4000);
+
+    try {
+      console.log("Sending Stop Command (Blank Payload)...");
+
+      const blankProgram = {
+        setupCmds: [],
+        loopCmds: []
+      };
+
+      const response = await fetch(`${ESP32_IP}/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        signal: controller.signal,
+        body: JSON.stringify(blankProgram),
+      });
+
+      if (response.ok) {
+        console.log("Robot halted successfully!");
+        showNotification("Robot stopped and program cleared.", "success");
+        pauseSerialDisconnectWarnings(2000);
+        setPlayButtonState("idle");
+
+      } else {
+        showNotification("The robot returned an error while attempting to stop.", "error");
+      }
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        showNotification("Stop request timed out. Try again.", "warning");
+      } else {
+        console.error("Network Error on Stop Command:", error);
+        showNotification("Could not reach the robot over Wi-Fi to stop it.", "error");
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
+      btnStop.innerText = "⏹️ Stop";
+      btnStop.disabled = false;
+    }
+  });
 }

@@ -70,20 +70,11 @@
 
     <!-- Footer -->
     <footer>
+      <button class="btn-stop" id="btn-stop">⏹️ Stop</button>
       <button class="btn-play" id="btn-play"><span>▶</span> Play!</button>
     </footer>
 
     <div class="notification" id="notification" aria-live="polite" aria-atomic="true"></div>
-
-    <!-- Success overlay -->
-    <div class="overlay" id="overlay" style="display: none">
-      <div class="overlay-card">
-        <div class="overlay-emoji">🎉</div>
-        <h2>Program Done!</h2>
-        <p>Your robot finished all the steps!</p>
-        <button onclick="closeOverlay()">▶ Run Again</button>
-      </div>
-    </div>
 
     <!-- Wi-Fi Setup Modal -->
     <div class="overlay" id="wifi-modal" style="display: none; z-index: 10000;">

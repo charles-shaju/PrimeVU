@@ -295,7 +295,7 @@ header {
 
 footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 14px;
   padding: 14px 24px 22px;
@@ -303,9 +303,8 @@ footer {
   flex-shrink: 0;
 }
 
-.btn-play {
-  background: linear-gradient(135deg, #1c78b6, #0f4f7a);
-  color: white;
+.btn-play,
+.btn-stop {
   border: none;
   border-radius: 16px;
   padding: 13px 34px;
@@ -317,14 +316,28 @@ footer {
   align-items: center;
   gap: 10px;
   box-shadow: 0 16px 28px rgba(28, 120, 182, 0.24);
-  transition: transform 0.15s, filter 0.15s;
-  margin-left: auto;
+  transition: transform 0.15s, filter 0.15s, box-shadow 0.15s;
 }
 
-.btn-play:hover {
+.btn-play {
+  background: linear-gradient(135deg, #1c78b6, #0f4f7a);
+  color: white;
+  box-shadow: 0 16px 28px rgba(28, 120, 182, 0.24);
+}
+
+.btn-stop {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: white;
+  box-shadow: 0 16px 28px rgba(180, 41, 41, 0.20);
+}
+
+.btn-play:hover,
+.btn-stop:hover {
   transform: translateY(-2px);
 }
-.btn-play:disabled {
+
+.btn-play:disabled,
+.btn-stop:disabled {
   background: #95aac0;
   box-shadow: none;
   cursor: not-allowed;
