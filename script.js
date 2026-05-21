@@ -23,6 +23,18 @@ const serialLogWindow = document.getElementById("serial-log");
 const btnClearSerial = document.getElementById("btn-clear-serial");
 const codeViewElement = document.getElementById("code-view");
 
+// ── Make the Tab Key Work in the Code Editor ────────────────
+const codeEditor = document.getElementById("code-view");
+
+if (codeEditor) {
+  codeEditor.addEventListener("keydown", function(e) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      document.execCommand("insertText", false, "  ");
+    }
+  });
+}
+
 let notificationTimer = null;
 let isCodePanelFocused = false;
 window.isCodePanelFocused = false;
