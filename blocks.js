@@ -1284,47 +1284,52 @@ updateCodePanel();
  
 function getProgramCommands() {
   const rawCodeText = document.getElementById("code-view")?.innerText || "";
-  const commands = [];
 
-  const loopStartMatch = rawCodeText.match(/void\s+loop\s*\(\s*\)\s*\{/);
+  const programData = {
+    setupCmds: [],
+    loopCmds: []
+  };
 
-  if (!loopStartMatch) {
-    alert("Could not find void loop() in your code editor!");
-    return [];
-  }
+  const lines = rawCodeText.split("\n");
+  let currentSection = "loop"; // default to loop if not found
 
-  const loopStartIndex = loopStartMatch.index + loopStartMatch[0].length;
-  const loopEndIndex = rawCodeText.lastIndexOf("}");
+  lines.forEach((rawLine) => {
+    let line = rawLine.trim();
 
-  if (loopEndIndex <= loopStartIndex) {
-    alert("Make sure your void loop() has a closing bracket '}'");
-    return [];
-  }
-
-  const loopContent = rawCodeText.substring(loopStartIndex, loopEndIndex);
-  const lines = loopContent.split("\n");
-
-  commands.push({ cmd: "tinkercad_repeat", args: "infinite_loop" });
-
-  lines.forEach((line) => {
-    line = line.trim();
-
+    // Ignore blanks, braces and comments
     if (!line || line === "}" || line === "{" || line.startsWith("//") || line.startsWith("/*") || line.startsWith("*")) return;
 
+    // Section switches
+    if (line.toLowerCase().includes("void setup")) {
+      currentSection = "setup";
+      return;
+    }
+    if (line.toLowerCase().includes("void loop")) {
+      currentSection = "loop";
+      return;
+    }
+
+    // Capture function-like commands: name(arg1, arg2)
     const match = line.match(/^([a-zA-Z0-9_.]+)\(([^)]*)\)/);
     if (!match) return;
 
-    const cmd = match[1];
-    let args = match[2];
+    const cmd = match[1].trim();
+    let args = match[2].trim();
 
-    if (args.endsWith(";")) {
-      args = args.slice(0, -1);
+    if (args.endsWith(";")) args = args.slice(0, -1).trim();
+    if (args.endsWith(")")) args = args.slice(0, -1).trim();
+
+    const commandObject = { cmd: cmd, args: args };
+
+    if (currentSection === "setup") {
+      programData.setupCmds.push(commandObject);
+    } else {
+      programData.loopCmds.push(commandObject);
     }
-
-    commands.push({ cmd: cmd, args: args });
   });
 
-  return commands;
+  console.log("Structured JSON Packet ready for upload transmission:", programData);
+  return programData;
 }
  
 // ═══════════════════════════════════════════════════════════════════════════

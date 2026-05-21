@@ -280,16 +280,16 @@ btnPair.addEventListener("click", async () => {
 
     let resolvedBoardName = device.name ? device.name.trim() : "";
     try {
-      const boardChar = await service.getCharacteristic(WIFI_BOARD_CHARACTERISTIC_UUID);
-      const boardValue = await boardChar.readValue();
+      // Read the shared IP characteristic which includes the board name after '||'
+      const ipChar = await service.getCharacteristic(WIFI_IP_CHARACTERISTIC_UUID);
+      const boardBuf = await ipChar.readValue();
       const boardDecoder = new TextDecoder("utf-8");
-      const boardNameFromBle = boardDecoder.decode(boardValue).trim();
-
-      if (boardNameFromBle) {
-        resolvedBoardName = boardNameFromBle;
-      }
+      const raw = boardDecoder.decode(boardBuf).trim(); // expected 'IP||Board'
+      const parts = raw.split("||");
+      const boardNameFromBle = parts[1] ? parts[1].trim() : "";
+      if (boardNameFromBle) resolvedBoardName = boardNameFromBle;
     } catch (boardError) {
-      console.warn("Could not read board type characteristic, using fallback label.", boardError);
+      console.warn("Could not read board info characteristic, using fallback label.", boardError);
     }
 
     setBoardName(resolvedBoardName);
@@ -407,9 +407,11 @@ if (btnSubmitWifi) {
 const btnPlay = document.getElementById("btn-play");
 
 btnPlay.addEventListener("click", async function () {
-  const commands = getProgramCommands();
+  const programPayload = getProgramCommands();
 
-  if (commands.length === 0) {
+  const totalCommands = (programPayload?.setupCmds?.length || 0) + (programPayload?.loopCmds?.length || 0);
+
+  if (!programPayload || totalCommands === 0) {
     showNotification("Drag some blocks into the workspace first.", "warning");
     return;
   }
@@ -424,15 +426,15 @@ btnPlay.addEventListener("click", async function () {
   btnPlay.disabled = true;
 
   try {
-    console.log("Sending program to ESP32:", commands);
-    
+    console.log("Sending program to ESP32:", programPayload);
+
     // Send the JSON to the ESP32 using the IP we got from Bluetooth
     const response = await fetch(`${ESP32_IP}/run`, {
       method: "POST",
       headers: {
-        "Content-Type": "text/plain", 
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(commands),
+      body: JSON.stringify(programPayload),
     });
 
     if (response.ok) {
