@@ -238,6 +238,61 @@ header {
 }
 
 /* ── Footer ── */
+.serial-monitor {
+  margin: 0 18px 10px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 18px;
+  background: rgba(8, 15, 28, 0.96);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+}
+
+.serial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #d9e7f5;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.serial-clear-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e7f1fb;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-family: "Nunito", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.serial-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.serial-log-window {
+  height: 120px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  background: #020617;
+  color: #86efac;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.serial-log-window .log-line {
+  margin-bottom: 4px;
+}
+
 footer {
   display: flex;
   justify-content: space-between;

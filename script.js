@@ -1,6 +1,10 @@
 // ── Global Variables ──────────────────────────────────────
 let ESP32_IP = ""; // Holds the IP address from Bluetooth pairing
 let connectedGattServer = null;
+let serialPollTimer = null;
+let serialPollActive = false;
+let serialLastLogId = 0;
+let serialDisconnectedShown = false;
 
 const WIFI_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const WIFI_WRITE_CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -14,8 +18,25 @@ const wifiSsidInput = document.getElementById("wifi-ssid");
 const wifiPassInput = document.getElementById("wifi-pass");
 const btnCancelWifi = document.getElementById("btn-cancel-wifi");
 const btnSubmitWifi = document.getElementById("btn-submit-wifi");
+const serialLogWindow = document.getElementById("serial-log");
+const btnClearSerial = document.getElementById("btn-clear-serial");
+const codeViewElement = document.getElementById("code-view");
 
 let notificationTimer = null;
+let isCodePanelFocused = false;
+window.isCodePanelFocused = false;
+
+if (codeViewElement) {
+  codeViewElement.addEventListener("focus", () => {
+    isCodePanelFocused = true;
+    window.isCodePanelFocused = true;
+  });
+
+  codeViewElement.addEventListener("blur", () => {
+    isCodePanelFocused = false;
+    window.isCodePanelFocused = false;
+  });
+}
 
 function showNotification(message, type = "warning") {
   if (!notificationEl) return;
@@ -141,10 +162,89 @@ function resetBluetoothSession(options = {}) {
     connectedGattServer.disconnect();
   }
   connectedGattServer = null;
+  stopWirelessSerialMonitor();
 
   if (!keepBoardName) {
     setBoardName("");
   }
+}
+
+function stopWirelessSerialMonitor() {
+  serialPollActive = false;
+
+  if (serialPollTimer) {
+    clearTimeout(serialPollTimer);
+    serialPollTimer = null;
+  }
+}
+
+async function pollWirelessSerialMonitor(ipAddress) {
+  if (!serialPollActive || !serialLogWindow) return;
+
+  try {
+    const response = await fetch(`${ipAddress}/serial?since=${serialLastLogId}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const lines = Array.isArray(payload.lines) ? payload.lines : [];
+
+    for (const entry of lines) {
+      if (!entry || typeof entry.text !== "string") continue;
+
+      const newLogLine = document.createElement("div");
+      newLogLine.className = "log-line";
+      newLogLine.innerText = entry.text;
+      serialLogWindow.appendChild(newLogLine);
+      serialLogWindow.scrollTop = serialLogWindow.scrollHeight;
+    }
+
+    if (typeof payload.next === "number") {
+      serialLastLogId = payload.next;
+    }
+
+    serialDisconnectedShown = false;
+  } catch (err) {
+    console.error("Serial stream disconnected:", err);
+    if (serialLogWindow && !serialDisconnectedShown) {
+      const warning = document.createElement("div");
+      warning.className = "log-line";
+      warning.style.color = "#ef4444";
+      warning.innerText = "Serial monitor line disconnected.";
+      serialLogWindow.appendChild(warning);
+      serialLogWindow.scrollTop = serialLogWindow.scrollHeight;
+      serialDisconnectedShown = true;
+    }
+  } finally {
+    if (serialPollActive) {
+      serialPollTimer = window.setTimeout(() => {
+        pollWirelessSerialMonitor(ipAddress);
+      }, 1000);
+    }
+  }
+}
+
+function startWirelessSerialMonitor(ipAddress) {
+  if (!serialLogWindow) return;
+
+  serialLogWindow.innerHTML = "<div>Connecting to live serial stream...</div>";
+
+  stopWirelessSerialMonitor();
+  serialPollActive = true;
+  serialLastLogId = 0;
+  serialDisconnectedShown = false;
+
+  pollWirelessSerialMonitor(ipAddress);
+}
+
+if (btnClearSerial && serialLogWindow) {
+  btnClearSerial.addEventListener("click", () => {
+    serialLogWindow.innerHTML = "<div>Log cleared.</div>";
+  });
 }
 
 btnPair.addEventListener("click", async () => {
@@ -211,6 +311,7 @@ if (btnCancelWifi) {
   btnCancelWifi.addEventListener("click", () => {
     closeWifiModal();
     ESP32_IP = "";
+    stopWirelessSerialMonitor();
     setConnectionStatus("Not connected", "red");
     resetBluetoothSession();
   });
@@ -261,6 +362,7 @@ if (btnSubmitWifi) {
 
             // 1. Save the pure network IP address for transmissions
             ESP32_IP = "http://" + resolvedIP;
+            startWirelessSerialMonitor(ESP32_IP);
 
             // 2. Dynamically swap the choice indicator in your index.html select dropdown header!
             const boardSelect = document.getElementById("board-select");
@@ -284,6 +386,7 @@ if (btnSubmitWifi) {
             clearInterval(checkInterval);
             if (headerStatusText) headerStatusText.innerText = "Wi-Fi link failed.";
             if (headerStatusText) headerStatusText.style.color = "red";
+            stopWirelessSerialMonitor();
             try { connectedGattServer.disconnect(); } catch (e) { /* ignore */ }
           }
         } catch (err) {
@@ -295,6 +398,7 @@ if (btnSubmitWifi) {
       console.error("Provisioning error:", error);
       if (headerStatusText) headerStatusText.innerText = "Setup configuration failed.";
       if (headerStatusText) headerStatusText.style.color = "red";
+      stopWirelessSerialMonitor();
     }
   });
 }

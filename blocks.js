@@ -31,13 +31,11 @@ Blockly.defineBlocksWithJsonArray([
     "message0": "set pin %1 to %2",
     "args0": [
       {
-        "type": "field_dropdown",
+        "type": "field_number",
         "name": "PIN",
-        "options": [
-          ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], 
-          ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"],
-          ["8", "8"], ["9", "9"], ["10", "10"], ["11", "11"]
-        ]
+        "value": 2,
+        "min": 0,
+        "max": 39
       },
       { 
         "type": "field_number", 
@@ -151,12 +149,11 @@ Blockly.defineBlocksWithJsonArray([
     "message0": "rotate servo on pin %1 to %2 degrees",
     "args0": [
       {
-        "type": "field_dropdown",
+        "type": "field_number",
         "name": "PIN",
-        "options": [
-          ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], 
-          ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"]
-        ]
+        "value": 2,
+        "min": 0,
+        "max": 39
       },
       { "type": "field_number", "name": "DEGREE", "value": 0, "min": 0, "max": 180 }
     ],
@@ -169,12 +166,11 @@ Blockly.defineBlocksWithJsonArray([
     "message0": "play speaker on pin %1 with tone %2 for %3 sec",
     "args0": [
       {
-        "type": "field_dropdown",
+        "type": "field_number",
         "name": "PIN",
-        "options": [
-          ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], 
-          ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"]
-        ]
+        "value": 2,
+        "min": 0,
+        "max": 39
       },
       { "type": "field_number", "name": "TONE", "value": 60 },
       { "type": "field_number", "name": "DURATION", "value": 1, "min": 0.1 }
@@ -188,12 +184,11 @@ Blockly.defineBlocksWithJsonArray([
     "message0": "turn off speaker on pin %1",
     "args0": [
       {
-        "type": "field_dropdown",
+        "type": "field_number",
         "name": "PIN",
-        "options": [
-          ["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], 
-          ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"]
-        ]
+        "value": 2,
+        "min": 0,
+        "max": 39
       }
     ],
     "previousStatement": null,
@@ -456,14 +451,14 @@ Blockly.defineBlocksWithJsonArray([
   {
     "type": "tinkercad_digital_read",
     "message0": "read digital pin %1",
-    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["0","0"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"]] }],
+    "args0": [{ "type": "field_number", "name": "PIN", "value": 2, "min": 0, "max": 39 }],
     "output": "Number",
     "colour": "#9965F9"
   },
   {
     "type": "tinkercad_analog_read",
     "message0": "read analog pin %1",
-    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["02","02"],["04","04"],["12","12"],["13","13"],["14","14"],["15","15"],["25","25"],["26","26"],["27","27"],["32","32"],["33","33"],["34","34"],["35","35"],["36","36"],["39","39"]] }],
+    "args0": [{ "type": "field_number", "name": "PIN", "value": 34, "min": 0, "max": 39 }],
     "output": "Number",
     "colour": "#9965F9"
   },
@@ -471,12 +466,7 @@ Blockly.defineBlocksWithJsonArray([
   {
     "type": "tinkercad_servo_read",
     "message0": "read degrees of servo on pin %1",
-    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [
-      ["0","0"],["1","1"],["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],
-      ["10","10"],["11","11"],["12","12"],["13","13"],["14","14"],["15","15"],["16","16"],["17","17"],["18","18"],["19","19"],
-      ["20","20"],["21","21"],["22","22"],["23","23"],["24","24"],["25","25"],["26","26"],["27","27"],["28","28"],["29","29"],
-      ["30","30"],["31","31"],["32","32"],["33","33"],["34","34"],["35","35"],["36","36"],["37","37"],["38","38"],["39","39"]
-    ] }],
+    "args0": [{ "type": "field_number", "name": "PIN", "value": 2, "min": 0, "max": 39 }],
     "output": "Number",
     "colour": "#9965F9"
   },
@@ -498,8 +488,8 @@ Blockly.defineBlocksWithJsonArray([
     "type": "tinkercad_ultrasonic",
     "message0": "read ultrasonic distance sensor on trigger pin %1 echo pin %2 in units %3",
     "args0": [
-      { "type": "field_dropdown", "name": "TRIG", "options": [["0","0"],["1","1"],["2","2"],["3","3"]] },
-      { "type": "field_dropdown", "name": "ECHO", "options": [["same as trigger", "SAME"], ["0","0"],["1","1"],["2","2"]] },
+      { "type": "field_number", "name": "TRIG", "value": 2, "min": 0, "max": 39 },
+      { "type": "field_number", "name": "ECHO", "value": 3, "min": 0, "max": 39 },
       { "type": "field_dropdown", "name": "UNIT", "options": [["cm","cm"],["inch","inch"]] }
     ],
     "output": "Number",
@@ -509,7 +499,7 @@ Blockly.defineBlocksWithJsonArray([
     "type": "tinkercad_temperature",
     "message0": "read temperature sensor on pin %1 in units %2",
     "args0": [
-      { "type": "field_dropdown", "name": "PIN", "options": [["02","02"],["04","04"],["12","12"],["13","13"],["14","14"],["15","15"],["25","25"],["26","26"],["27","27"],["32","32"],["33","33"],["34","34"],["35","35"],["36","36"],["39","39"]] },
+      { "type": "field_number", "name": "PIN", "value": 34, "min": 0, "max": 39 },
       { "type": "field_dropdown", "name": "UNIT", "options": [["°C","C"],["°F","F"]] }
     ],
     "output": "Number",
@@ -518,7 +508,7 @@ Blockly.defineBlocksWithJsonArray([
   {
     "type": "tinkercad_ir_sensor",
     "message0": "read infrared sensor pin %1",
-    "args0": [{ "type": "field_dropdown", "name": "PIN", "options": [["0","0"],["1","1"],["2","2"]] }],
+    "args0": [{ "type": "field_number", "name": "PIN", "value": 0, "min": 0, "max": 39 }],
     "output": "Number",
     "colour": "#9965F9"
   },
@@ -770,7 +760,7 @@ arduinoGenerator.forBlock['tinkercad_analog_read'] = function(block) {
 
 arduinoGenerator.forBlock['tinkercad_servo_read'] = function(block) {
   const pin = block.getFieldValue('PIN');
-  arduinoGenerator.definitions_['include_servo'] = '#include <Servo.h>';
+  arduinoGenerator.definitions_['include_servo'] = '#include <ESP32Servo.h>';
   arduinoGenerator.definitions_[`var_servo_${pin}`] = `Servo servo_${pin};`;
   arduinoGenerator.setups_[`setup_servo_${pin}`] = `servo_${pin}.attach(${pin});`;
   return [`servo_${pin}.read()`, arduinoGenerator.ORDER_ATOMIC];
@@ -928,7 +918,7 @@ arduinoGenerator.forBlock['tinkercad_rotate_servo'] = function(block) {
   const degree = block.getFieldValue('DEGREE');
   
   // Inject Library and Global Variable
-  arduinoGenerator.definitions_['include_servo'] = '#include <Servo.h>';
+  arduinoGenerator.definitions_['include_servo'] = '#include <ESP32Servo.h>';
   arduinoGenerator.definitions_[`var_servo_${pin}`] = `Servo servo_${pin};`;
   
   // Inject Setup Code
@@ -1240,6 +1230,8 @@ const workspace = Blockly.inject("blockly-div", {
 // 5. LIVE CODE PREVIEW
 // ═══════════════════════════════════════════════
 function updateCodePanel() {
+  if (window.isCodePanelFocused) return;
+
   const view = document.getElementById("code-view");
   const { setupCode, loopCode, definitions, setups, titleComment } = buildProgramSections();
  
@@ -1291,23 +1283,47 @@ updateCodePanel();
 // ═══════════════════════════════════════════════
  
 function getProgramCommands() {
-  const { loopCode } = buildProgramSections();
-  const trimmedLoop = loopCode.trim();
-  if (!trimmedLoop) return [];
- 
+  const rawCodeText = document.getElementById("code-view")?.innerText || "";
   const commands = [];
-  trimmedLoop.split("\n").forEach((line) => {
+
+  const loopStartMatch = rawCodeText.match(/void\s+loop\s*\(\s*\)\s*\{/);
+
+  if (!loopStartMatch) {
+    alert("Could not find void loop() in your code editor!");
+    return [];
+  }
+
+  const loopStartIndex = loopStartMatch.index + loopStartMatch[0].length;
+  const loopEndIndex = rawCodeText.lastIndexOf("}");
+
+  if (loopEndIndex <= loopStartIndex) {
+    alert("Make sure your void loop() has a closing bracket '}'");
+    return [];
+  }
+
+  const loopContent = rawCodeText.substring(loopStartIndex, loopEndIndex);
+  const lines = loopContent.split("\n");
+
+  commands.push({ cmd: "tinkercad_repeat", args: "infinite_loop" });
+
+  lines.forEach((line) => {
     line = line.trim();
-    if (!line || line === "}") return;
-    
-    // Match command and everything inside parentheses
+
+    if (!line || line === "}" || line === "{" || line.startsWith("//") || line.startsWith("/*") || line.startsWith("*")) return;
+
     const match = line.match(/^([a-zA-Z0-9_.]+)\(([^)]*)\)/);
     if (!match) return;
-    
-    const cmd  = match[1]; // e.g., "digitalWrite"
-    const args = match[2]; // e.g., "2, HIGH"
+
+    const cmd = match[1];
+    let args = match[2];
+
+    if (args.endsWith(";")) {
+      args = args.slice(0, -1);
+    }
+
     commands.push({ cmd: cmd, args: args });
   });
+
   return commands;
 }
  

@@ -53,10 +53,19 @@
           <span>Generated Commands</span>
           <button class="copy-btn" id="btn-copy">Copy</button>
         </div>
-        <pre class="code-view" id="code-view">
+        <pre class="code-view" id="code-view" contenteditable="true">
 // Drag blocks to see commands here</pre
         >
       </div>
+    </div>
+
+    <!-- Wireless Serial Monitor -->
+    <div class="serial-monitor">
+      <div class="serial-header">
+        <span>Virtual Serial Monitor</span>
+        <button id="btn-clear-serial" class="serial-clear-btn">Clear Log</button>
+      </div>
+      <div id="serial-log" class="serial-log-window">Awaiting robot connection...</div>
     </div>
 
     <!-- Footer -->
