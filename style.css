@@ -1177,3 +1177,17 @@ footer {
 .code-view .state {
   color: #f9e2af; 
 }
+/* ── Battery Badge ── */
+.battery-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 184, 166, 0.4);
+  background: rgba(20, 184, 166, 0.1);
+  color: #0f766e;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}

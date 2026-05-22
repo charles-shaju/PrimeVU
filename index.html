@@ -3,23 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Robot Coder 🤖</title>
+    <title>PrimeVU</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Header -->
     <header>
       <div class="logo">
         <img src="logo.jpeg" alt="PrimeVU" class="header-logo" />
         <img src="PRIMEVU.jpeg" alt="PRIMEVU" class="brand-wordmark" />
       </div>
       <div class="header-controls">
+        <div class="battery-status" id="battery-status" style="display: none;">
+          <span id="battery-pct">--V | --%</span> 🔋
+        </div>
         <span class="board-name" id="board-name">Board: Unknown</span>
         <button type="button" id="btn-usb-connect" class="header-action-btn header-primary-btn">Connect Bluetooth</button>
         <button type="button" id="btn-usb-disconnect" class="header-action-btn header-secondary-btn" disabled>Disconnect</button>
@@ -30,7 +29,6 @@
       </div>
     </header>
 
-    <!-- Toolbar -->
     <div class="toolbar" id="blockly-toolbar">
       <select id="view-select">
         <option value="blocks">Blocks</option>
@@ -39,14 +37,12 @@
       <button class="toolbar-btn" id="btn-clear-workspace">Clear All</button>
     </div>
 
-    <!-- Wireless Calibration -->
     <section class="calibration-panel" id="calibration-panel">
       <div class="calibration-header">
         <div>
           <h2>Wireless Servo Calibration</h2>
           <p>Pair the Otto board once, then adjust each trim over Wi-Fi directly from the browser.</p>
         </div>
-
       </div>
 
       <div class="calibration-actions">
@@ -99,12 +95,11 @@
       <div class="calibration-bottom-actions">
         <button id="btn-usb-home" class="calibration-secondary-btn" disabled>Home</button>
         <button id="btn-usb-walk" class="calibration-secondary-btn" disabled>Walk Test</button>
-        <button id="btn-calibration-play" class="calibration-play-btn" disabled>Play Zone</button>
-        <button id="btn-next-blockly" class="calibration-next-btn" disabled>Next: Blockly Programming</button>
+        <button id="btn-calibration-play" class="calibration-play-btn" disabled>🎮 Play Zone</button>
+        <button id="btn-next-blockly" class="calibration-next-btn" disabled>✏️ Blockly Code</button>
       </div>
     </section>
 
-    <!-- Play Dashboard -->
     <section class="play-panel" id="play-panel" style="display: none;">
       <div class="play-shell">
         <div class="play-header">
@@ -113,8 +108,8 @@
             <p>Drive the robot with the joystick and trigger quick poses or gestures.</p>
           </div>
           <div class="play-header-actions">
-            <button type="button" id="btn-run-blockly" class="play-run-btn" disabled>Run Blockly Program</button>
-            <button type="button" id="btn-play-back" class="play-back-btn">Back</button>
+            <button type="button" id="btn-goto-calib-from-play" class="play-back-btn">⚙️ Calibration</button>
+            <button type="button" id="btn-goto-blockly-from-play" class="play-back-btn">✏️ Blockly Code</button>
           </div>
         </div>
 
@@ -130,14 +125,14 @@
           <div class="play-card action-card">
             <div class="play-card-title">Quick Actions</div>
             <div class="play-actions-grid">
-              <button type="button" class="play-action-btn" data-play-action="stand">Stand</button>
-              <button type="button" class="play-action-btn" data-play-action="sit">Sit</button>
+              <button type="button" class="play-action-btn" data-play-action="sit">Sit (Victory)</button>
+              <button type="button" class="play-action-btn" data-play-action="stand">Stand (Sad)</button>
               <button type="button" class="play-action-btn" data-play-action="dance">Dance</button>
               <button type="button" class="play-action-btn" data-play-action="wave">Wave</button>
-              <button type="button" class="play-action-btn" data-play-action="forward">Forward</button>
-              <button type="button" class="play-action-btn" data-play-action="backward">Backward</button>
-              <button type="button" class="play-action-btn" data-play-action="left">Turn Left</button>
-              <button type="button" class="play-action-btn" data-play-action="right">Turn Right</button>
+              <button type="button" class="play-action-btn" data-play-action="moonwalker">Moonwalker</button>
+              <button type="button" class="play-action-btn" data-play-action="crusher">Crusher</button>
+              <button type="button" class="play-action-btn" data-play-action="flapping">Flapping</button>
+              <button type="button" class="play-action-btn" data-play-action="shake">Shake Leg</button>
             </div>
           </div>
         </div>
@@ -146,29 +141,20 @@
       </div>
     </section>
 
-    <!-- Main area -->
     <div class="main" id="blockly-main">
-      <!-- LEFT: Blockly workspace -->
       <div class="blockly-wrap" id="blockly-wrap">
         <div id="blockly-div"></div>
       </div>
-
-      <!-- DIVIDER (draggable) -->
       <div class="divider" id="divider"></div>
-
-      <!-- RIGHT: Code preview -->
       <div class="code-panel" id="code-panel">
         <div class="code-header">
           <span>Generated Commands</span>
           <button class="copy-btn" id="btn-copy">Copy</button>
         </div>
-        <pre class="code-view" id="code-view" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off">
-// Drag blocks to see commands here</pre
-        >
+        <pre class="code-view" id="code-view" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off">// Drag blocks to see commands here</pre>
       </div>
     </div>
 
-    <!-- Wireless Serial Monitor -->
     <div class="serial-monitor" id="blockly-serial">
       <div class="serial-header">
         <span>Virtual Serial Monitor</span>
@@ -177,15 +163,15 @@
       <div id="serial-log" class="serial-log-window">Awaiting robot connection...</div>
     </div>
 
-    <!-- Footer -->
     <footer id="blockly-footer">
-      <button class="btn-stop" id="btn-stop">⏹️ Stop</button>
+      <button class="btn-play" id="btn-goto-calib-from-blockly" style="background: linear-gradient(135deg, #64748b, #475569);">⚙️ Calibration</button>
       <button class="btn-play" id="btn-play"><span>🎮</span> Play Zone</button>
+      <button class="play-run-btn" id="btn-run-blockly-footer" style="padding: 13px 24px; font-size: 16px; border-radius: 16px; border: none; cursor: pointer; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: 800; box-shadow: 0 16px 28px rgba(16, 185, 129, 0.24);">🚀 Upload Code</button>
+      <button class="btn-stop" id="btn-stop">⏹️ Stop Robot</button>
     </footer>
 
     <div class="notification" id="notification" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Wi-Fi Setup Modal -->
     <div class="overlay" id="wifi-modal" style="display: none; z-index: 10000;">
       <div class="overlay-card wifi-card">
         <h3>Configure Robot Wi-Fi</h3>
