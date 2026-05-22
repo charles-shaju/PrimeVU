@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "PrimeVU",
+			"path": "../../../PlatformIO/Projects/PrimeVU"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "PrimeVU"
+	}
+}

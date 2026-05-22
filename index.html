@@ -20,17 +20,18 @@
         <img src="PRIMEVU.jpeg" alt="PRIMEVU" class="brand-wordmark" />
       </div>
       <div class="header-controls">
-        <span id="board-name" class="board-name" aria-live="polite"></span>
-        <button id="btn-pair" class="btn-pair">Connect Via Bluetooth</button>
-        <div class="status">
-          <span class="dot" id="status-dot"></span>
-          <span id="status-text">Not connected</span>
+        <span class="board-name" id="board-name">Board: Unknown</span>
+        <button type="button" id="btn-usb-connect" class="header-action-btn header-primary-btn">Connect Bluetooth</button>
+        <button type="button" id="btn-usb-disconnect" class="header-action-btn header-secondary-btn" disabled>Disconnect</button>
+        <div class="usb-header-status" aria-live="polite">
+          <span class="dot" id="usb-status-dot"></span>
+          <span id="usb-status-text">Wireless disconnected</span>
         </div>
       </div>
     </header>
 
     <!-- Toolbar -->
-    <div class="toolbar">
+    <div class="toolbar" id="blockly-toolbar">
       <select id="view-select">
         <option value="blocks">Blocks</option>
         <option value="both" selected>Blocks + Code</option>
@@ -38,8 +39,115 @@
       <button class="toolbar-btn" id="btn-clear-workspace">Clear All</button>
     </div>
 
+    <!-- Wireless Calibration -->
+    <section class="calibration-panel" id="calibration-panel">
+      <div class="calibration-header">
+        <div>
+          <h2>Wireless Servo Calibration</h2>
+          <p>Pair the Otto board once, then adjust each trim over Wi-Fi directly from the browser.</p>
+        </div>
+
+      </div>
+
+      <div class="calibration-actions">
+        <button id="btn-usb-save" class="calibration-save-btn" disabled>Save</button>
+        <button id="btn-usb-reset" class="calibration-danger-btn" disabled>Reset</button>
+      </div>
+
+      <div class="calibration-save-state" id="calibration-save-state">No changes saved yet.</div>
+
+      <div class="trim-grid">
+        <div class="trim-card">
+          <div class="trim-label">Left Leg (YL)</div>
+          <input class="trim-input" id="trim-input-YL" type="number" step="1" inputmode="numeric" />
+          <div class="trim-buttons">
+            <button type="button" class="trim-btn" data-trim-axis="YL" data-trim-step="-1">Down</button>
+            <button type="button" class="trim-btn" data-trim-axis="YL" data-trim-step="1">Up</button>
+          </div>
+        </div>
+
+        <div class="trim-card">
+          <div class="trim-label">Left Foot (RL)</div>
+          <input class="trim-input" id="trim-input-RL" type="number" step="1" inputmode="numeric" />
+          <div class="trim-buttons">
+            <button type="button" class="trim-btn" data-trim-axis="RL" data-trim-step="-1">Down</button>
+            <button type="button" class="trim-btn" data-trim-axis="RL" data-trim-step="1">Up</button>
+          </div>
+        </div>
+
+        <div class="trim-card">
+          <div class="trim-label">Right Leg (YR)</div>
+          <input class="trim-input" id="trim-input-YR" type="number" step="1" inputmode="numeric" />
+          <div class="trim-buttons">
+            <button type="button" class="trim-btn" data-trim-axis="YR" data-trim-step="-1">Down</button>
+            <button type="button" class="trim-btn" data-trim-axis="YR" data-trim-step="1">Up</button>
+          </div>
+        </div>
+
+        <div class="trim-card">
+          <div class="trim-label">Right Foot (RR)</div>
+          <input class="trim-input" id="trim-input-RR" type="number" step="1" inputmode="numeric" />
+          <div class="trim-buttons">
+            <button type="button" class="trim-btn" data-trim-axis="RR" data-trim-step="-1">Down</button>
+            <button type="button" class="trim-btn" data-trim-axis="RR" data-trim-step="1">Up</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="usb-calibration-log" class="calibration-log">Pair the robot and connect wirelessly to read calibration messages.</div>
+
+      <div class="calibration-bottom-actions">
+        <button id="btn-usb-home" class="calibration-secondary-btn" disabled>Home</button>
+        <button id="btn-usb-walk" class="calibration-secondary-btn" disabled>Walk Test</button>
+        <button id="btn-calibration-play" class="calibration-play-btn" disabled>Play Zone</button>
+        <button id="btn-next-blockly" class="calibration-next-btn" disabled>Next: Blockly Programming</button>
+      </div>
+    </section>
+
+    <!-- Play Dashboard -->
+    <section class="play-panel" id="play-panel" style="display: none;">
+      <div class="play-shell">
+        <div class="play-header">
+          <div>
+            <h2>Robot Play Zone</h2>
+            <p>Drive the robot with the joystick and trigger quick poses or gestures.</p>
+          </div>
+          <div class="play-header-actions">
+            <button type="button" id="btn-run-blockly" class="play-run-btn" disabled>Run Blockly Program</button>
+            <button type="button" id="btn-play-back" class="play-back-btn">Back</button>
+          </div>
+        </div>
+
+        <div class="play-grid">
+          <div class="play-card joystick-card">
+            <div class="play-card-title">Joystick Drive</div>
+            <div class="joystick-pad" id="joystick-pad" aria-label="Robot joystick control" role="application" tabindex="0">
+              <div class="joystick-knob" id="joystick-knob"></div>
+            </div>
+            <div class="joystick-readout" id="joystick-readout">X 0 | Y 0</div>
+          </div>
+
+          <div class="play-card action-card">
+            <div class="play-card-title">Quick Actions</div>
+            <div class="play-actions-grid">
+              <button type="button" class="play-action-btn" data-play-action="stand">Stand</button>
+              <button type="button" class="play-action-btn" data-play-action="sit">Sit</button>
+              <button type="button" class="play-action-btn" data-play-action="dance">Dance</button>
+              <button type="button" class="play-action-btn" data-play-action="wave">Wave</button>
+              <button type="button" class="play-action-btn" data-play-action="forward">Forward</button>
+              <button type="button" class="play-action-btn" data-play-action="backward">Backward</button>
+              <button type="button" class="play-action-btn" data-play-action="left">Turn Left</button>
+              <button type="button" class="play-action-btn" data-play-action="right">Turn Right</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="play-log" id="play-log">Connect the robot first, then use the live controls here.</div>
+      </div>
+    </section>
+
     <!-- Main area -->
-    <div class="main">
+    <div class="main" id="blockly-main">
       <!-- LEFT: Blockly workspace -->
       <div class="blockly-wrap" id="blockly-wrap">
         <div id="blockly-div"></div>
@@ -61,7 +169,7 @@
     </div>
 
     <!-- Wireless Serial Monitor -->
-    <div class="serial-monitor">
+    <div class="serial-monitor" id="blockly-serial">
       <div class="serial-header">
         <span>Virtual Serial Monitor</span>
         <button id="btn-clear-serial" class="serial-clear-btn">Clear Log</button>
@@ -70,9 +178,9 @@
     </div>
 
     <!-- Footer -->
-    <footer>
+    <footer id="blockly-footer">
       <button class="btn-stop" id="btn-stop">⏹️ Stop</button>
-      <button class="btn-play" id="btn-play"><span>▶</span> Play!</button>
+      <button class="btn-play" id="btn-play"><span>🎮</span> Play Zone</button>
     </footer>
 
     <div class="notification" id="notification" aria-live="polite" aria-atomic="true"></div>
