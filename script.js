@@ -17,6 +17,10 @@ let serialPollTimer = null;
 let serialPollActive = false;
 let serialLastLogId = 0;
 
+// 💡 NEW: Aggressive timeouts for auto-disconnecting
+const SERIAL_POLL_TIMEOUT_MS = 1500; 
+const SERIAL_HEARTBEAT_INTERVAL_MS = 10000;
+
 const WIFI_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const WIFI_WRITE_CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const WIFI_IP_CHARACTERISTIC_UUID = "e3238001-c534-4bc1-ad09-eb44dfedbcdd";
@@ -31,10 +35,12 @@ const wifiSsidInput = document.getElementById("wifi-ssid");
 const wifiPassInput = document.getElementById("wifi-pass");
 const btnCancelWifi = document.getElementById("btn-cancel-wifi");
 const btnSubmitWifi = document.getElementById("btn-submit-wifi");
+
 const serialLogWindow = document.getElementById("serial-log");
-const btnClearSerial = document.getElementById("btn-clear-serial");
-const codeViewElement = document.getElementById("code-view");
 const usbCalibrationLog = document.getElementById("usb-calibration-log");
+const playLog = document.getElementById("play-log");
+
+const codeViewElement = document.getElementById("code-view");
 const usbStatusDot = document.getElementById("usb-status-dot");
 const usbStatusText = document.getElementById("usb-status-text");
 const btnUsbConnect = document.getElementById("btn-usb-connect");
@@ -43,6 +49,7 @@ const btnUsbHome = document.getElementById("btn-usb-home");
 const btnUsbWalk = document.getElementById("btn-usb-walk");
 const btnUsbReset = document.getElementById("btn-usb-reset");
 const btnUsbSave = document.getElementById("btn-usb-save");
+const btnClearSerial = document.getElementById("btn-clear-serial");
 
 // Navigation Buttons
 const btnCalibrationPlay = document.getElementById("btn-calibration-play");
@@ -58,8 +65,8 @@ const btnRunBlocklyFooter = document.getElementById("btn-run-blockly-footer");
 const joystickPad = document.getElementById("joystick-pad");
 const joystickKnob = document.getElementById("joystick-knob");
 const joystickReadout = document.getElementById("joystick-readout");
-const playLog = document.getElementById("play-log");
 const playActionButtons = document.querySelectorAll("[data-play-action]");
+const PLAY_ACTION_CONNECTION_GRACE_MS = 15000;
 
 const blocklyToolbar = document.getElementById("blockly-toolbar");
 const blocklyMain = document.getElementById("blockly-main");
@@ -78,6 +85,8 @@ const trimState = { YL: null, RL: null, YR: null, RR: null };
 
 let usbCalibrationConnected = false;
 let currentAppView = "calibration";
+let serialPollFailureCount = 0;
+let playActionGraceUntil = 0;
 let joystickPointerActive = false;
 let joystickLoopTimer = null;
 let currentJoyX = 0;
@@ -115,28 +124,23 @@ function setPlayControlsEnabled(isEnabled) {
   if (!isEnabled && joystickReadout) joystickReadout.textContent = "X 0 | Y 0";
 }
 
-function appendPlayLog(message, color) {
-  if (!playLog) return;
-  const row = document.createElement("div");
-  row.textContent = message;
-  if (color) row.style.color = color;
-  playLog.appendChild(row);
-  playLog.scrollTop = playLog.scrollHeight;
-}
-
 // ── Page Routing System ────────────────
 function hideWorkspaceViews() {
   document.getElementById("calibration-panel").style.display = "none";
   if (playPanel) playPanel.style.display = "none";
   if (blocklyToolbar) blocklyToolbar.style.display = "none";
   if (blocklyMain) blocklyMain.style.display = "none";
-  if (blocklySerial) blocklySerial.style.display = "none";
   if (blocklyFooter) blocklyFooter.style.display = "none";
+}
+
+function setSerialMonitorVisible(isVisible) {
+  if (blocklySerial) blocklySerial.style.display = isVisible ? "block" : "none";
 }
 
 function showCalibrationPage() {
   hideWorkspaceViews();
   document.getElementById("calibration-panel").style.display = "block";
+  setSerialMonitorVisible(true);
   currentAppView = "calibration";
 }
 
@@ -144,7 +148,7 @@ function showBlocklyProgrammingPage() {
   hideWorkspaceViews();
   if (blocklyToolbar) blocklyToolbar.style.display = "flex";
   if (blocklyMain) blocklyMain.style.display = "flex";
-  if (blocklySerial) blocklySerial.style.display = "block";
+  setSerialMonitorVisible(true);
   if (blocklyFooter) blocklyFooter.style.display = "flex";
   currentAppView = "blockly";
   setTimeout(() => Blockly.svgResize(workspace), 50);
@@ -153,6 +157,7 @@ function showBlocklyProgrammingPage() {
 function showPlayPanel() {
   hideWorkspaceViews();
   if (playPanel) playPanel.style.display = "block";
+  setSerialMonitorVisible(true);
   currentAppView = "play";
   setPlayControlsEnabled(!!ESP32_IP);
 }
@@ -220,7 +225,6 @@ if (joystickPad) {
     joystickPad.setPointerCapture(event.pointerId);
     moveJoystick(event);
 
-    // Run rapid background polling to keep the robot moving non-stop
     if (!joystickLoopTimer) {
       joystickLoopTimer = setInterval(async () => {
         if (isSendingJoy) return;
@@ -242,7 +246,7 @@ if (joystickPad) {
       clearInterval(joystickLoopTimer);
       joystickLoopTimer = null;
     }
-    resetJoystick(); // Fires X=0 Y=0 to stop the robot instantly
+    resetJoystick();
   };
 
   joystickPad.addEventListener("pointerup", releaseJoystick);
@@ -265,15 +269,6 @@ function showNotification(message, type = "warning") {
 function setUsbCalibrationStatus(message, color) {
   if (usbStatusText) { usbStatusText.textContent = message; usbStatusText.style.color = color; }
   if (usbStatusDot) { usbStatusDot.style.background = color; usbStatusDot.classList.toggle("connected", color === "green"); }
-}
-
-function appendUsbCalibrationLog(message, color) {
-  if (!usbCalibrationLog) return;
-  const row = document.createElement("div");
-  row.textContent = message;
-  if (color) row.style.color = color;
-  usbCalibrationLog.appendChild(row);
-  usbCalibrationLog.scrollTop = usbCalibrationLog.scrollHeight;
 }
 
 function setCalibrationSaveState(message, stateClass) {
@@ -361,19 +356,55 @@ function resetBluetoothSession() {
   if (batteryStatusPanel) batteryStatusPanel.style.display = "none";
 }
 
+// 💡 FIXED: Aggressively resets ALL UI elements when connection is lost
+function handleWirelessDisconnect(statusMessage = "Wireless disconnected") {
+  usbCalibrationConnected = false;
+  ESP32_IP = "";
+  serialPollFailureCount = 0;
+  playActionGraceUntil = 0;
+  
+  resetBluetoothSession();
+  setUsbCalibrationControlsEnabled(false);
+  setUsbCalibrationStatus(statusMessage, "#b91c1c");
+  setPlayControlsEnabled(false);
+  
+  // Wipe all 3 log windows
+  const lostMsg = "<div>Connection lost. Reconnect to resume live messages.</div>";
+  if (serialLogWindow) serialLogWindow.innerHTML = lostMsg;
+  if (usbCalibrationLog) usbCalibrationLog.innerHTML = lostMsg;
+  if (playLog) playLog.innerHTML = lostMsg;
+  
+  // Kill phantom joystick loops
+  if (joystickLoopTimer) {
+    clearInterval(joystickLoopTimer);
+    joystickLoopTimer = null;
+  }
+  joystickPointerActive = false;
+}
+
 function stopWirelessSerialMonitor() {
   serialPollActive = false;
   if (serialPollTimer) { clearTimeout(serialPollTimer); serialPollTimer = null; }
 }
 
+// 💡 FIXED: Live Poller now routes to all 3 windows and enforces strict dropouts
 async function pollWirelessSerialMonitor(ipAddress) {
-  if (!serialPollActive || !serialLogWindow) return;
+  if (!serialPollActive) return;
+  
+  const abortController = new AbortController();
+  const pollTimeout = window.setTimeout(() => abortController.abort(), SERIAL_POLL_TIMEOUT_MS);
+  
   try {
-    const response = await fetch(`${ipAddress}/serial?since=${serialLastLogId}`, { cache: "no-store" });
+    const response = await fetch(`${ipAddress}/serial?since=${serialLastLogId}`, { 
+      cache: "no-store", 
+      signal: abortController.signal 
+    });
+    
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
+    serialPollFailureCount = 0; // Reset failure count on success
     
-    // Parse the new Battery Voltage and Percentage
+    // Battery UI Update
     if (typeof payload.battery === "number" && typeof payload.voltage === "number" && batteryStatusPanel) {
       batteryStatusPanel.style.display = "inline-flex";
       batteryPctText.innerText = `${payload.voltage.toFixed(1)}V | ${payload.battery}%`;
@@ -381,39 +412,62 @@ async function pollWirelessSerialMonitor(ipAddress) {
       batteryStatusPanel.style.color = payload.battery > 20 ? "#0f766e" : "#b91c1c";
     }
 
+    // 💡 FIXED: Route logs to ALL 3 UI windows simultaneously
     const lines = Array.isArray(payload.lines) ? payload.lines : [];
     for (const entry of lines) {
       if (!entry || typeof entry.text !== "string") continue;
-      const row = document.createElement("div");
-      row.className = "log-line";
-      row.innerText = entry.text;
-      serialLogWindow.appendChild(row);
-      serialLogWindow.scrollTop = serialLogWindow.scrollHeight;
+      
+      const logContainers = [serialLogWindow, usbCalibrationLog, playLog];
+      logContainers.forEach(container => {
+        if (container) {
+          const row = document.createElement("div");
+          row.className = "log-line";
+          row.innerText = entry.text;
+          container.appendChild(row);
+          container.scrollTop = container.scrollHeight;
+        }
+      });
     }
+    
     if (typeof payload.next === "number") serialLastLogId = payload.next;
+
   } catch (err) {
-    // Ignore timeout drops safely
+    // 💡 FIXED: Aggressively disconnect if the robot misses 2 rapid pings (power loss)
+    if (Date.now() < playActionGraceUntil) {
+      serialPollFailureCount = 0;
+      return;
+    }
+    serialPollFailureCount += 1;
+    if (serialPollFailureCount >= 2) {
+      handleWirelessDisconnect("Connection Lost (Power/Range)");
+      return; // Exit loop completely
+    }
   } finally {
-    if (serialPollActive) serialPollTimer = window.setTimeout(() => pollWirelessSerialMonitor(ipAddress), 1000);
+    clearTimeout(pollTimeout);
+    if (serialPollActive) {
+      serialPollTimer = window.setTimeout(() => pollWirelessSerialMonitor(ipAddress), 1000);
+    }
   }
 }
 
 function startWirelessSerialMonitor(ipAddress) {
-  if (!serialLogWindow) return;
-  serialLogWindow.innerHTML = "<div>Connecting to live serial stream...</div>";
+  const initMsg = "<div>Connecting to live serial stream...</div>";
+  if (serialLogWindow) serialLogWindow.innerHTML = initMsg;
+  if (usbCalibrationLog) usbCalibrationLog.innerHTML = initMsg;
+  if (playLog) playLog.innerHTML = initMsg;
+  
   stopWirelessSerialMonitor();
+  setSerialMonitorVisible(true);
   serialPollActive = true;
   serialLastLogId = 0;
+  serialPollFailureCount = 0;
   pollWirelessSerialMonitor(ipAddress);
 }
 
 // ── Auth & Handlers ────────────────
 if (btnUsbDisconnect) {
   btnUsbDisconnect.addEventListener("click", () => {
-    usbCalibrationConnected = false;
-    setUsbCalibrationControlsEnabled(false);
-    setUsbCalibrationStatus("Wireless disconnected", "#b91c1c");
-    resetBluetoothSession();
+    handleWirelessDisconnect();
   });
 }
 if (btnUsbHome) btnUsbHome.addEventListener("click", () => writeUsbCalibrationCommand("H"));
@@ -423,7 +477,14 @@ if (btnUsbSave) btnUsbSave.addEventListener("click", () => {
   writeUsbCalibrationCommand("SAVE");
   setCalibrationSaveState("EEPROM saved successfully.", "saved");
 });
-if (btnClearSerial && serialLogWindow) btnClearSerial.addEventListener("click", () => serialLogWindow.innerHTML = "<div>Log cleared.</div>");
+
+if (btnClearSerial) {
+  btnClearSerial.addEventListener("click", () => {
+    if (serialLogWindow) serialLogWindow.innerHTML = "<div>Log cleared.</div>";
+    if (usbCalibrationLog) usbCalibrationLog.innerHTML = "<div>Log cleared.</div>";
+    if (playLog) playLog.innerHTML = "<div>Log cleared.</div>";
+  });
+}
 
 usbTrimButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -459,8 +520,7 @@ if (btnPair) btnPair.addEventListener("click", async () => {
 
 if (btnCancelWifi) btnCancelWifi.addEventListener("click", () => {
   if (wifiModal) wifiModal.style.display = "none";
-  resetBluetoothSession();
-  setUsbCalibrationStatus("Disconnected", "red");
+  handleWirelessDisconnect("Disconnected");
 });
 
 if (btnSubmitWifi) btnSubmitWifi.addEventListener("click", async () => {
@@ -500,7 +560,7 @@ if (btnSubmitWifi) btnSubmitWifi.addEventListener("click", async () => {
       }
     }, 1500);
   } catch (err) {
-    setUsbCalibrationStatus("Provision Error", "red");
+    handleWirelessDisconnect("Provision Error");
   }
 });
 
@@ -531,6 +591,7 @@ playActionButtons.forEach((btn) => {
     const action = btn.getAttribute("data-play-action");
     if (!action) return;
     btn.disabled = true;
+    playActionGraceUntil = Date.now() + PLAY_ACTION_CONNECTION_GRACE_MS;
     try {
       await sendRobotControlCommand({ action });
     } finally {
@@ -612,3 +673,5 @@ function getProgramCommands() {
   });
   return programData;
 }
+
+showCalibrationPage();
